@@ -20,6 +20,8 @@ requirements:
     - xz
   host:
     - gmp
+  run:
+    - gmp
 
 about:
   home: https://haskell.org/ghc/
