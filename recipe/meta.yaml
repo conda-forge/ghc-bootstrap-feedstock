@@ -18,6 +18,7 @@ requirements:
     - {{ compiler('c') }}
     - {{ compiler('cxx') }}
     - xz
+    - gmp
   host:
     - gmp
   run:
