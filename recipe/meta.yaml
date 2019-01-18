@@ -22,12 +22,9 @@ requirements:
   host:
     - gmp
   run:
-    - gmp
-
-test:
-  requires:
     - {{ compiler('c') }}
     - {{ compiler('cxx') }}
+    - gmp
 
 about:
   home: https://haskell.org/ghc/
