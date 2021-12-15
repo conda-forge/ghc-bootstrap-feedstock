@@ -1,13 +1,13 @@
 {% set name = "ghc-bootstrap" %}
-{% set version = "8.2.2" %}
+{% set version = "8.10.7" %}
 
 package:
   name: {{ name|lower }}
   version: {{ version }}
 
 source:
-  - url: https://downloads.haskell.org/~ghc/{{ version }}/ghc-{{ version }}-x86_64-deb7-linux.tar.xz
-    sha256: "cd7afbca54edf9890da9f432c63366556246c85c1198e40c99df5af01c555834"
+  - url: https://downloads.haskell.org/~ghc/{{ version }}/ghc-{{ version }}-x86_64-deb10-linux.tar.xz
+    sha256: "a13719bca87a0d3ac0c7d4157a4e60887009a7f1a8dbe95c4759ec413e086d30"
 
 build:
   number: 1003
