@@ -6,8 +6,8 @@ package:
   version: {{ version }}
 
 source:
-  - url: https://downloads.haskell.org/~ghc/{{ version }}/ghc-{{ version }}-x86_64-deb10-linux.tar.xz
-    sha256: "a13719bca87a0d3ac0c7d4157a4e60887009a7f1a8dbe95c4759ec413e086d30"
+  - url: https://downloads.haskell.org/~ghc/{{ version }}/ghc-{{ version }}-x86_64-centos7-linux.tar.xz
+    sha256: "262a50bfb5b7c8770e0d99f54d42e5876968da7bf93e2e4d6cfe397891a36d05"
 
 build:
   number: 1003
