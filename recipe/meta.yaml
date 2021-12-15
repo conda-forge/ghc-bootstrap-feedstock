@@ -19,6 +19,7 @@ requirements:
     - {{ compiler('cxx') }}
     - xz
     - gmp
+    - make
   host:
     - gmp
   run:
