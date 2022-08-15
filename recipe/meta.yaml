@@ -27,6 +27,7 @@ requirements:
     - {{ compiler('cxx') }}   # [not win]
     - gmp            # [not win]
     - ncurses  5.*   # [not win]
+    - make      # [unix]
     - m2-bash   # [win]
     - m2-base   # [win]
     - m2-make   # [win]
