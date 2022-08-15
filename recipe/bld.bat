@@ -1,3 +1,3 @@
-export LD_LIBRARY_PATH="$PREFIX/lib:$LD_LIBRARY_PATH:$BUILD_PREFIX/lib"
-./configure --prefix=$PREFIX --with-gmp-includes=$PREFIX/include --with-gmp-libraries=$PREFIX/lib
+export PATH="%PREFIX%/Library/lib:%PATH%:%BUILD_PREFIX%/Library/lib"
+./configure --prefix=%LIBRARY_PREFIX%
 make install

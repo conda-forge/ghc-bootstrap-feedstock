@@ -11,7 +11,7 @@ source:
   - url: https://downloads.haskell.org/~ghc/{{ version }}/ghc-{{ version }}-aarch64-deb10-linux.tar.xz  # [target_platform == 'linux-aarch64']
     sha256: 7e8ed05533b8ed0440bfb4881e3098333a9dadf24cb6857c2446879e43f7362c   # [target_platform == 'linux-aarch64']
   - url: https://downloads.haskell.org/~ghc/{{ version }}/ghc-{{ version }}-x86_64-apple-darwin.tar.xz  # [target_platform == 'osx-64']
-    sha256: f649b1b25d9ac26d4413b8c837ca021ddbc094625dd105d29e3e01bf21904739  # [target_platform == 'osx-64']
+    sha256:  b737e6f06857f572bbff304914f9e73c1b91b56243016109c775bdba42faa448  # [target_platform == 'osx-64']
   - url: https://downloads.haskell.org/~ghc/{{ version }}/ghc-{{ version }}-aarch64-apple-darwin.tar.xz  # [target_platform == 'osx-arm64']
     sha256: 4bf84448690d5b75ab92cf45db12b6cf53fa8cfc427a5b002b73a1b94b251c07  # [target_platform == 'osx-arm64']
   - url: https://downloads.haskell.org/~ghc/{{ version }}/ghc-{{ version }}-x86_64-unknown-mingw32.tar.xz  # [target_platform == 'win-64']
@@ -19,21 +19,22 @@ source:
 
 build:
   number: 0
+  skip: true   # [ppc64le]
 
 requirements:
   build:
-    - {{ compiler('c') }}
-    - {{ compiler('cxx') }}
-    - gmp
-    - ncurses  5.*
+    - {{ compiler('c') }}     # [not win]
+    - {{ compiler('cxx') }}   # [not win]
+    - gmp            # [not win]
+    - ncurses  5.*   # [not win]
     - m2-bash   # [win]
     - m2-base   # [win]
     - m2-make   # [win]
   run:
-    - {{ compiler('c') }}
-    - {{ compiler('cxx') }}
-    - gmp
-    - ncurses  5.*
+    - {{ compiler('c') }}     # [not win]
+    - {{ compiler('cxx') }}   # [not win]
+    - gmp            # [not win]
+    - ncurses  5.*   # [not win]
 
 test:
   files:
