@@ -1,30 +1,45 @@
 {% set name = "ghc-bootstrap" %}
-{% set version = "8.2.2" %}
+{% set version = "9.4.1" %}
 
 package:
   name: {{ name|lower }}
   version: {{ version }}
 
 source:
-  - url: https://downloads.haskell.org/~ghc/{{ version }}/ghc-{{ version }}-x86_64-deb7-linux.tar.xz
-    sha256: "cd7afbca54edf9890da9f432c63366556246c85c1198e40c99df5af01c555834"
+  - url: https://downloads.haskell.org/~ghc/{{ version }}/ghc-{{ version }}-x86_64-centos7-linux.tar.xz  # [target_platform == 'linux-64']
+    sha256: 2ac415621849c32a400d69af059a3bb1cfa852c1427be6733540f0f7ad2a7470  # [target_platform == 'linux-64']
+  - url: https://downloads.haskell.org/~ghc/{{ version }}/ghc-{{ version }}-aarch64-deb10-linux.tar.xz  # [target_platform == 'linux-aarch64']
+    sha256: 7e8ed05533b8ed0440bfb4881e3098333a9dadf24cb6857c2446879e43f7362c   # [target_platform == 'linux-aarch64']
+  - url: https://downloads.haskell.org/~ghc/{{ version }}/ghc-{{ version }}-x86_64-apple-darwin.tar.xz  # [target_platform == 'osx-64']
+    sha256: f649b1b25d9ac26d4413b8c837ca021ddbc094625dd105d29e3e01bf21904739  # [target_platform == 'osx-64']
+  - url: https://downloads.haskell.org/~ghc/{{ version }}/ghc-{{ version }}-aarch64-apple-darwin.tar.xz  # [target_platform == 'osx-arm64']
+    sha256: 4bf84448690d5b75ab92cf45db12b6cf53fa8cfc427a5b002b73a1b94b251c07  # [target_platform == 'osx-arm64']
+  - url: https://downloads.haskell.org/~ghc/{{ version }}/ghc-{{ version }}-x86_64-unknown-mingw32.tar.xz  # [target_platform == 'win-64']
+    sha256: fdc2d78b8a978e712a4edcc1628e36a36be736d8202107d2d61999ac7a9dc5d0  # [target_platform == 'win-64']
 
 build:
-  number: 1003
-  skip: True  # [not linux]
+  number: 0
 
 requirements:
   build:
     - {{ compiler('c') }}
     - {{ compiler('cxx') }}
-    - xz
     - gmp
-  host:
-    - gmp
+    - ncurses  5.*
+    - m2-bash   # [win]
+    - m2-base   # [win]
+    - m2-make   # [win]
   run:
     - {{ compiler('c') }}
     - {{ compiler('cxx') }}
     - gmp
+    - ncurses  5.*
+
+test:
+  files:
+    - hello.hs
+  commands:
+    - ghc hello.hs -o hello
 
 about:
   home: https://haskell.org/ghc/
@@ -39,3 +54,4 @@ about:
 extra:
   recipe-maintainers:
     - eggzilla
+    - msarahan
