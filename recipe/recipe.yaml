@@ -2,7 +2,7 @@ context:
   version: "9.10.1"
 
 package:
-  name: ghc
+  name: ghc-bootstrap
   version: ${{ version }}
 
 source:
