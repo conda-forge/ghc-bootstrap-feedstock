@@ -42,6 +42,7 @@ requirements:
         - m2-which
   host:
     - gmp
+    - libffi
   run:
     - ${{ compiler('c') }}
     - ${{ stdlib('c') }}
@@ -57,7 +58,11 @@ tests:
       ghc-bootstrap --version
   - script: |
       echo 'main = putStrLn "Hello conda-forge"' > hello.hs
-      ghc-bootstrap -v -L${CONDA_PREFIX}/lib hello.hs
+      if [[ "$OSTYPE" == "darwin"* ]]; then
+        ghc-bootstrap -v -L${CONDA_PREFIX}/lib -optl-Wl,-rpath,${CONDA_PREFIX}/lib hello.hs
+      else
+        ghc-bootstrap -v -L${CONDA_PREFIX}/lib hello.hs
+      fi
       ./hello
 
 about:

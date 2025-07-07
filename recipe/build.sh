@@ -84,7 +84,7 @@ if [[ ! -d bootstrap-ghc ]]; then
   perl -pi -e 's#($ENV{BUILD_PREFIX}|$ENV{PREFIX})/bin/##' "${PREFIX}"/ghc-bootstrap/lib/ghc-"${PKG_VERSION}"/lib/settings
 else
   pushd bootstrap-ghc || exit 1
-    tar cf - ./* | (cd "${PREFIX}" || exit; tar xf -)
+    tar cf - ./* | (cd "${PREFIX}/ghc-bootstrap" || exit; tar xf -)
   popd || exit 1
 fi
 
