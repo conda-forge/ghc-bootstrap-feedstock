@@ -108,7 +108,7 @@ arch="${arch//-64/-x86_64}"
 arch="${arch#*-}"
 arch="${arch//arm64/aarch64}"
 os=${target_platform%%-*}
-os="${os/win/windows/}"
+os="${os//win/windows/}"
 pushd "${PREFIX}/ghc-bootstrap/share/doc/${arch}-${target_platform%%-*}-ghc-${PKG_VERSION}"
   for file in */LICENSE; do
     cp "${file///-}" "${SRC_DIR}"/license_files
