@@ -38,6 +38,7 @@ requirements:
         - perl
       else:
         - m2-bash
+        - m2-coreutils
         - m2-findutils
         - m2-which
   host:
