@@ -57,36 +57,36 @@ requirements:
 tests:
   - package_contents:
       files:
-        - ${PREFIX}/ghc-bootstrap/bin/ghc-${{ version }}${{ "" if unix else ".exe" }}
-        - ${PREFIX}/ghc-bootstrap/bin/ghc-pkg-${{ version }}${{ "" if unix else ".exe" }}
-        - ${PREFIX}/ghc-bootstrap/bin/ghc-pkg${{ "" if unix else ".exe" }}
-        - ${PREFIX}/ghc-bootstrap/bin/ghc-toolchain-bin-ghc-${{ version }}${{ "" if unix else ".exe" }}
-        - ${PREFIX}/ghc-bootstrap/bin/ghc-toolchain-bin${{ "" if unix else ".exe" }}
-        - ${PREFIX}/ghc-bootstrap/bin/ghc${{ "" if unix else ".exe" }}
-        - ${PREFIX}/ghc-bootstrap/bin/ghci-${{ version }}${{ "" if unix else ".exe" }}
-        - ${PREFIX}/ghc-bootstrap/bin/ghci${{ "" if unix else ".exe" }}
-        - ${PREFIX}/ghc-bootstrap/bin/haddock-ghc-${{ version }}${{ "" if unix else ".exe" }}
-        - ${PREFIX}/ghc-bootstrap/bin/haddock${{ "" if unix else ".exe" }}
-        - ${PREFIX}/ghc-bootstrap/bin/hp2ps-ghc-${{ version }}${{ "" if unix else ".exe" }}
-        - ${PREFIX}/ghc-bootstrap/bin/hp2ps${{ "" if unix else ".exe" }}
-        - ${PREFIX}/ghc-bootstrap/bin/hpc-ghc-${{ version }}${{ "" if unix else ".exe" }}
-        - ${PREFIX}/ghc-bootstrap/bin/hpc${{ "" if unix else ".exe" }}
-        - ${PREFIX}/ghc-bootstrap/bin/hsc2hs-ghc-${{ version }}${{ "" if unix else ".exe" }}
-        - ${PREFIX}/ghc-bootstrap/bin/hsc2hs${{ "" if unix else ".exe" }}
-        - ${PREFIX}/ghc-bootstrap/bin/runghc-${{ version }}${{ "" if unix else ".exe" }}
-        - ${PREFIX}/ghc-bootstrap/bin/runghc${{ "" if unix else ".exe" }}
-        - ${PREFIX}/ghc-bootstrap/bin/runhaskell-${{ version }}${{ "" if unix else ".exe" }}
-        - ${PREFIX}/ghc-bootstrap/bin/runhaskell${{ "" if unix else ".exe" }}
+        - ghc-bootstrap/bin/ghc-${{ version }}${{ "" if unix else ".exe" }}
+        - ghc-bootstrap/bin/ghc-pkg-${{ version }}${{ "" if unix else ".exe" }}
+        - ghc-bootstrap/bin/ghc-pkg${{ "" if unix else ".exe" }}
+        - ghc-bootstrap/bin/ghc-toolchain-bin-ghc-${{ version }}${{ "" if unix else ".exe" }}
+        - ghc-bootstrap/bin/ghc-toolchain-bin${{ "" if unix else ".exe" }}
+        - ghc-bootstrap/bin/ghc${{ "" if unix else ".exe" }}
+        - ghc-bootstrap/bin/ghci-${{ version }}${{ "" if unix else ".exe" }}
+        - ghc-bootstrap/bin/ghci${{ "" if unix else ".exe" }}
+        - ghc-bootstrap/bin/haddock-ghc-${{ version }}${{ "" if unix else ".exe" }}
+        - ghc-bootstrap/bin/haddock${{ "" if unix else ".exe" }}
+        - ghc-bootstrap/bin/hp2ps-ghc-${{ version }}${{ "" if unix else ".exe" }}
+        - ghc-bootstrap/bin/hp2ps${{ "" if unix else ".exe" }}
+        - ghc-bootstrap/bin/hpc-ghc-${{ version }}${{ "" if unix else ".exe" }}
+        - ghc-bootstrap/bin/hpc${{ "" if unix else ".exe" }}
+        - ghc-bootstrap/bin/hsc2hs-ghc-${{ version }}${{ "" if unix else ".exe" }}
+        - ghc-bootstrap/bin/hsc2hs${{ "" if unix else ".exe" }}
+        - ghc-bootstrap/bin/runghc-${{ version }}${{ "" if unix else ".exe" }}
+        - ghc-bootstrap/bin/runghc${{ "" if unix else ".exe" }}
+        - ghc-bootstrap/bin/runhaskell-${{ version }}${{ "" if unix else ".exe" }}
+        - ghc-bootstrap/bin/runhaskell${{ "" if unix else ".exe" }}
         - if: not unix
           then:
-            - ${PREFIX}/ghc-bootstrap/bin/ghc-iserv-ghc-${{ version }}
-            - ${PREFIX}/ghc-bootstrap/bin/ghc-iserv-prof-ghc-${{ version }}
-            - ${PREFIX}/ghc-bootstrap/bin/ghc-iserv-prof
-            - ${PREFIX}/ghc-bootstrap/bin/ghc-iserv
-            - ${PREFIX}/ghc-bootstrap/bin/unlit-ghc-${{ version }}
-            - ${PREFIX}/ghc-bootstrap/bin/unlit
-            - ${PREFIX}/ghc-bootstrap/bin/ghcii.sh
-            - ${PREFIX}/ghc-bootstrap/bin/ghcii9.10.1.sh
+            - ghc-bootstrap/bin/ghc-iserv-ghc-${{ version }}
+            - ghc-bootstrap/bin/ghc-iserv-prof-ghc-${{ version }}
+            - ghc-bootstrap/bin/ghc-iserv-prof
+            - ghc-bootstrap/bin/ghc-iserv
+            - ghc-bootstrap/bin/unlit-ghc-${{ version }}
+            - ghc-bootstrap/bin/unlit
+            - ghc-bootstrap/bin/ghcii.sh
+            - ghc-bootstrap/bin/ghcii9.10.1.sh
 
   - script: |
       ${PREFIX}/ghc-bootstrap/bin/ghc${{ "" if unix else ".exe" }} --version

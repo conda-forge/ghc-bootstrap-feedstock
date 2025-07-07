@@ -109,7 +109,7 @@ arch="${arch#*-}"
 arch="${arch//arm64/aarch64}"
 os=${target_platform%%-*}
 os="${os//win/windows}"
-pushd "${PREFIX}/ghc-bootstrap/share/doc/${arch}-${os}-ghc-${PKG_VERSION}"
+pushd "${PREFIX}/ghc-bootstrap/share/doc/${arch}-${os}-ghc-${PKG_VERSION}" || pushd "${PREFIX}/ghc-bootstrap/lib/doc/${arch}-${os}-ghc-${PKG_VERSION}"
   for file in */LICENSE; do
     cp "${file///-}" "${SRC_DIR}"/license_files
   done
