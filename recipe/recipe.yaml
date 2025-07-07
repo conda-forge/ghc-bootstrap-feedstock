@@ -89,16 +89,16 @@ tests:
             - ${PREFIX}/ghc-bootstrap/bin/ghcii9.10.1.sh
 
   - script: |
-      ${PREFIX}/ghc-bootstrap/bin/ghc --version
+      ${PREFIX}/ghc-bootstrap/bin/ghc${{ "" if unix else ".exe" }} --version
 
   - script: |
       echo 'main = putStrLn "Hello conda-forge"' > hello.hs
       if [[ "$OSTYPE" == "darwin"* ]]; then
-        ${PREFIX}/ghc-bootstrap/bin/ghc -v -L${CONDA_PREFIX}/lib -optl-Wl,-rpath,${CONDA_PREFIX}/lib hello.hs
+        ${PREFIX}/ghc-bootstrap/bin/ghc${{ "" if unix else ".exe" }} -v -L${CONDA_PREFIX}/lib -optl-Wl,-rpath,${CONDA_PREFIX}/lib hello.hs
       else
-        ${PREFIX}/ghc-bootstrap/bin/ghc -v -L${CONDA_PREFIX}/lib hello.hs
+        ${PREFIX}/ghc-bootstrap/bin/ghc${{ "" if unix else ".exe" }} -v -L${CONDA_PREFIX}/lib hello.hs
       fi
-      ./hello
+      ./hello${{ "" if unix else ".exe" }}
 
 about:
   homepage: https://haskell.org/ghc/
