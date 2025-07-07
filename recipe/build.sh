@@ -89,7 +89,7 @@ if [[ ! -d bootstrap-ghc ]]; then
   find "${PREFIX}"/ghc-bootstrap/lib/ghc-"${PKG_VERSION}" -name '*.p_o' -delete
 else
   pushd bootstrap-ghc || exit 1
-    tar cf - ./* | (cd "${PREFIX}\\ghc-bootstrap" || exit; tar xf -)
+    tar cf - ./* | (cd "${PREFIX}/ghc-bootstrap" || exit; tar xf -)
   popd || exit 1
 
   cat "${PREFIX}"/ghc-bootstrap/lib/ghc-"${PKG_VERSION}"/lib/settings || true
