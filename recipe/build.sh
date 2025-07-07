@@ -85,19 +85,25 @@ if [[ ! -d bootstrap-ghc ]]; then
 
   # Add package licenses
   cp "${PREFIX}"/ghc-bootstrap/share/doc/*-ghc-"${PKG_VERSION}"/ghc-"${PKG_VERSION}"/LICENSE "${SRC_DIR}"/LICENSE
+  mkdir -p "${PREFIX}"/bin
+  ln -s "${PREFIX}"/ghc-bootstrap/bin/ghc "${PREFIX}"/bin/ghc-bootstrap
+
+  # Reduce footprint
+  rm -rf "${PREFIX}"/ghc-bootstrap/share/doc/ghc-"${PKG_VERSION}"/html
+  find "${PREFIX}"/ghc-bootstrap/lib/ghc-"${PKG_VERSION}" -name '*_p.a' -delete
+  find "${PREFIX}"/ghc-bootstrap/lib/ghc-"${PKG_VERSION}" -name '*.p_o' -delete
 else
   pushd bootstrap-ghc || exit 1
-    tar cf - ./* | (cd "${PREFIX}/ghc-bootstrap" || exit; tar xf -)
+    tar cf - ./* | (cd "${PREFIX}\\ghc-bootstrap" || exit; tar xf -)
   popd || exit 1
 
   # Add package licenses
-  cp "${PREFIX}"/ghc-bootstrap/lib/doc/x86_64-windows-ghc-"${PKG_VERSION}"/ghc-"${PKG_VERSION}"/LICENSE "${SRC_DIR}"/LICENSE
+  cp "${PREFIX}"\\ghc-bootstrap\\lib\\doc\\x86_64-windows-ghc-"${PKG_VERSION}"\\ghc-"${PKG_VERSION}"\\LICENSE "${SRC_DIR}"\\LICENSE
+
+  cat "${PREFIX}"/ghc-bootstrap/lib/ghc-"${PKG_VERSION}"/lib/settings || true
+  cat "${PREFIX}"/ghc-bootstrap/lib/lib/ghc-"${PKG_VERSION}"/lib/settings || true
+
+  # Reduce footprint
+  rm -rf "${PREFIX}"/ghc-bootstrap/doc/html
+  rm -rf "${PREFIX}"/ghc-bootstrap/mingw
 fi
-
-mkdir -p "${PREFIX}"/bin
-ln -s "${PREFIX}"/ghc-bootstrap/bin/ghc "${PREFIX}"/bin/ghc-bootstrap
-
-# Reduce footprint
-rm -rf "${PREFIX}"/ghc-bootstrap/share/doc/ghc-"${PKG_VERSION}"/html
-find "${PREFIX}"/ghc-bootstrap/lib/ghc-"${PKG_VERSION}" -name '*_p.a' -delete
-find "${PREFIX}"/ghc-bootstrap/lib/ghc-"${PKG_VERSION}" -name '*.p_o' -delete
