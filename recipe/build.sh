@@ -72,7 +72,7 @@ run_and_log() {
 mkdir -p "${PREFIX}"/ghc-bootstrap "${SRC_DIR}"/_logs
 
 # Install bootstrap GHC - Set conda platform moniker
-if [[ ! -d bootstrp-ghc ]]; then
+if [[ ! -d bootstrap-ghc ]]; then
   run_and_log "bs-configure" bash configure \
     --prefix="${PREFIX}"/ghc-bootstrap \
     --enable-ghc-toolchain

@@ -31,13 +31,15 @@ requirements:
     - ${{ compiler('cxx') }}
     - ${{ stdlib('c') }}
 
-    - if: linux
+    - if: unix
       then:
         - make
         - patchelf
         - perl
       else:
-        - m2-make
+        - m2-bash
+        - m2-findutils
+        - m2-which
   host:
     - gmp
   run:
