@@ -97,7 +97,7 @@ ln -s "${PREFIX}"/ghc-bootstrap/bin/ghc "${PREFIX}"/bin/ghc-bootstrap
 # arch="${arch#*-}"
 # arch="${arch//arm64/aarch64}"
 # cp "${PREFIX}/ghc-bootstrap/share/doc/${arch}-${target_platform%%-*}-ghc-${PKG_VERSION}/ghc-${PKG_VERSION}/LICENSE" "${SRC_DIR}/LICENSE"
-cp "${PREFIX}/ghc-bootstrap/share/doc/*-ghc-${PKG_VERSION}/ghc-${PKG_VERSION}/LICENSE" "${SRC_DIR}/LICENSE"
+cp "${PREFIX}"/ghc-bootstrap/share/doc/*-ghc-"${PKG_VERSION}"/ghc-"${PKG_VERSION}"/LICENSE" "${SRC_DIR}/LICENSE"
 
 # Reduce footprint
 rm -rf "${PREFIX}"/ghc-bootstrap/share/doc/ghc-"${PKG_VERSION}"/html
