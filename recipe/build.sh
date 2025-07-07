@@ -68,6 +68,9 @@ run_and_log() {
   return $exit_code
 }
 
+unset build_alias
+unset host_alias
+
 # Create directories for binaries and logs
 mkdir -p "${PREFIX}"/ghc-bootstrap "${SRC_DIR}"/_logs
 
@@ -80,7 +83,7 @@ if [[ ! -d bootstrap-ghc ]]; then
   run_and_log "bs-make-install" make install
   perl -pi -e 's#($ENV{BUILD_PREFIX}|$ENV{PREFIX})/bin/##' "${PREFIX}"/ghc-bootstrap/lib/ghc-"${PKG_VERSION}"/lib/settings
 else
-  pushd bootstrp-ghc || exit 1
+  pushd bootstrap-ghc || exit 1
     tar cf - ./* | (cd "${PREFIX}" || exit; tar xf -)
   popd || exit 1
 fi
