@@ -60,8 +60,6 @@ tests:
         - ghc-bootstrap/bin/ghc-${{ version }}${{ "" if unix else ".exe" }}
         - ghc-bootstrap/bin/ghc-pkg-${{ version }}${{ "" if unix else ".exe" }}
         - ghc-bootstrap/bin/ghc-pkg${{ "" if unix else ".exe" }}
-        - ghc-bootstrap/bin/ghc-toolchain-bin-ghc-${{ version }}${{ "" if unix else ".exe" }}
-        - ghc-bootstrap/bin/ghc-toolchain-bin${{ "" if unix else ".exe" }}
         - ghc-bootstrap/bin/ghc${{ "" if unix else ".exe" }}
         - ghc-bootstrap/bin/ghci-${{ version }}${{ "" if unix else ".exe" }}
         - ghc-bootstrap/bin/ghci${{ "" if unix else ".exe" }}
@@ -77,16 +75,20 @@ tests:
         - ghc-bootstrap/bin/runghc${{ "" if unix else ".exe" }}
         - ghc-bootstrap/bin/runhaskell-${{ version }}${{ "" if unix else ".exe" }}
         - ghc-bootstrap/bin/runhaskell${{ "" if unix else ".exe" }}
-        - if: not unix
+        - if: unix
           then:
-            - ghc-bootstrap/bin/ghc-iserv-ghc-${{ version }}
-            - ghc-bootstrap/bin/ghc-iserv-prof-ghc-${{ version }}
-            - ghc-bootstrap/bin/ghc-iserv-prof
-            - ghc-bootstrap/bin/ghc-iserv
-            - ghc-bootstrap/bin/unlit-ghc-${{ version }}
-            - ghc-bootstrap/bin/unlit
+            - ghc-bootstrap/lib/ghc-${{ version }}/bin/ghc-toolchain-bin-ghc-${{ version }}${{ "" if unix else ".exe" }}
+            - ghc-bootstrap/lib/ghc-${{ version }}/bin/ghc-toolchain-bin${{ "" if unix else ".exe" }}
+          else:
+            - ghc-bootstrap/bin/ghc-iserv-ghc-${{ version }}.exe
+            - ghc-bootstrap/bin/ghc-iserv-prof-ghc-${{ version }}.exe
+            - ghc-bootstrap/bin/ghc-iserv-prof.exe
+            - ghc-bootstrap/bin/ghc-iserv.exe
+            - ghc-bootstrap/bin/unlit-ghc-${{ version }}.exe
+            - ghc-bootstrap/bin/unlit.exe
             - ghc-bootstrap/bin/ghcii.sh
             - ghc-bootstrap/bin/ghcii9.10.1.sh
+
 
   - script: |
       ${PREFIX}/ghc-bootstrap/bin/ghc${{ "" if unix else ".exe" }} --version
