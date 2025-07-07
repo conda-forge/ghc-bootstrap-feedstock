@@ -82,23 +82,20 @@ if [[ ! -d bootstrap-ghc ]]; then
   cp default.target.ghc-toolchain default.target
   run_and_log "bs-make-install" make install
   perl -pi -e 's#($ENV{BUILD_PREFIX}|$ENV{PREFIX})/bin/##' "${PREFIX}"/ghc-bootstrap/lib/ghc-"${PKG_VERSION}"/lib/settings
+
+  # Add package licenses
+  cp "${PREFIX}"/ghc-bootstrap/share/doc/*-ghc-"${PKG_VERSION}"/ghc-"${PKG_VERSION}"/LICENSE "${SRC_DIR}"/LICENSE
 else
   pushd bootstrap-ghc || exit 1
     tar cf - ./* | (cd "${PREFIX}/ghc-bootstrap" || exit; tar xf -)
   popd || exit 1
+
+  # Add package licenses
+  cp "${PREFIX}"/ghc-bootstrap/lib/doc/x86_64-windows-ghc-"${PKG_VERSION}"/ghc-"${PKG_VERSION}"/LICENSE "${SRC_DIR}"/LICENSE
 fi
 
 mkdir -p "${PREFIX}"/bin
 ln -s "${PREFIX}"/ghc-bootstrap/bin/ghc "${PREFIX}"/bin/ghc-bootstrap
-
-# Add package licenses
-# arch="-${target_platform#*-}"
-# arch="${arch//-64/-x86_64}"
-# arch="${arch#*-}"
-# arch="${arch//arm64/aarch64}"
-# cp "${PREFIX}/ghc-bootstrap/share/doc/${arch}-${target_platform%%-*}-ghc-${PKG_VERSION}/ghc-${PKG_VERSION}/LICENSE" "${SRC_DIR}/LICENSE"
-find "${PREFIX}"/ghc-bootstrap/ -name 'LICENSE' -exec cp {} "${SRC_DIR}"/LICENSE \;
-cp "${PREFIX}"/ghc-bootstrap/share/doc/*-ghc-"${PKG_VERSION}"/ghc-"${PKG_VERSION}"/LICENSE "${SRC_DIR}"/LICENSE
 
 # Reduce footprint
 rm -rf "${PREFIX}"/ghc-bootstrap/share/doc/ghc-"${PKG_VERSION}"/html
