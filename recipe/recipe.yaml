@@ -90,17 +90,20 @@ tests:
             - ghc-bootstrap/bin/ghcii9.10.1.sh
 
 
-  - script: |
-      ${PREFIX}/ghc-bootstrap/bin/ghc${{ "" if unix else ".exe" }} --version
+  - script:
+      - if: unix
+        then: ${PREFIX}/ghc-bootstrap/bin/ghc --version
+        else: %PREFIX%\\ghc-bootstrap\\bin\\ghc.exe --version
 
-  - script: |
-      echo 'main = putStrLn "Hello conda-forge"' > hello.hs
-      if [[ "$OSTYPE" == "darwin"* ]]; then
-        ${PREFIX}/ghc-bootstrap/bin/ghc${{ "" if unix else ".exe" }} -v -L${CONDA_PREFIX}/lib -optl-Wl,-rpath,${CONDA_PREFIX}/lib hello.hs
-      else
-        ${PREFIX}/ghc-bootstrap/bin/ghc${{ "" if unix else ".exe" }} -v -L${CONDA_PREFIX}/lib hello.hs
-      fi
-      ./hello${{ "" if unix else ".exe" }}
+  - script:
+      - echo 'main = putStrLn "Hello conda-forge"' > hello.hs
+      - if: osx
+        then: ${PREFIX}/ghc-bootstrap/bin/ghc -v -L${CONDA_PREFIX}/lib -optl-Wl,-rpath,${CONDA_PREFIX}/lib hello.hs
+      - if: linux
+        then: ${PREFIX}/ghc-bootstrap/bin/ghc -v -L${CONDA_PREFIX}/lib hello.hs
+      - if: not unix
+        then: %PREFIX%\\ghc-bootstrap\\bin\\ghc.exe -v -L%CONDA_PREFIX%\\lib hello.hs
+      - ./hello
 
 about:
   homepage: https://haskell.org/ghc/
