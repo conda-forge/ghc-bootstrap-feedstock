@@ -97,7 +97,9 @@ else
   perl -i -pe 's#-L\$topdir/../mingw//lib -L\$topdir/../mingw//x86_64-w64-mingw32/lib##g' "${PREFIX}"/ghc-bootstrap/lib/settings
 
   # Fake mingw directory
-  mkdir -p "${PREFIX}"/ghc-bootstrap/mingw/{bin,lib,include}
+  mkdir -p "${PREFIX}"/ghc-bootstrap/mingw/
+  ls "${BUILD_PREFIX}"\\Library\\x86_64-w64-mingw32\\sysroot\\usr
+  touch "${PREFIX}"/ghc-bootstrap/mingw/__unused__
 
   # Reduce footprint
   rm -rf "${PREFIX}"/ghc-bootstrap/lib/lib
