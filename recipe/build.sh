@@ -116,7 +116,9 @@ else
       echo "Warning: Symbolic links not available on Windows. Some features may be limited."
       cmd //c 'mklink lib ..\Library\x86_64-w64-mingw32\sysroot\usr\lib' 2>/dev/null;
     else
-      echo "Creating fake mingw directory in ${PREFIX}/ghc-bootstrap/mingw" | cat > "${PREFIX}"/ghc-bootstrap/mingw/__unused__
+      mkdir -p include lib
+      echo "Creating fake mingw directory in ${PREFIX}/ghc-bootstrap/mingw" | cat > "${PREFIX}"/ghc-bootstrap/mingw/include/__unused__
+      echo "Creating fake mingw directory in ${PREFIX}/ghc-bootstrap/mingw" | cat > "${PREFIX}"/ghc-bootstrap/mingw/lib/__unused__
     fi
   popd || exit 1
   # ls "${BUILD_PREFIX}"\\Library\\x86_64-w64-mingw32\\sysroot\\usr
