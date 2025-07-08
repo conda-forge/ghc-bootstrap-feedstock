@@ -92,7 +92,7 @@ else
     tar cf - ./* | (cd "${PREFIX}/ghc-bootstrap" || exit; tar xf -)
   popd || exit 1
 
-  cat "${PREFIX}"/ghc-bootstrap/lib/ghc-"${PKG_VERSION}"/lib/settings || true
+  cat "${PREFIX}"/ghc-bootstrap/lib/settings || true
 
   # Reduce footprint
   rm -rf "${PREFIX}"/ghc-bootstrap/lib/lib
