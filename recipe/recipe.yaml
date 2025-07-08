@@ -103,7 +103,7 @@ tests:
         then: ${PREFIX}/ghc-bootstrap/bin/ghc -v -L${CONDA_PREFIX}/lib hello.hs
       - if: not unix
         then: CALL %PREFIX%/ghc-bootstrap/bin/ghc.exe -v -L%CONDA_PREFIX%/lib hello.hs
-      - hello
+      - ./hello || hello.exe
 
 about:
   homepage: https://haskell.org/ghc/
