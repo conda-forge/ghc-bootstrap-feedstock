@@ -88,9 +88,9 @@ if [[ ! -d bootstrap-ghc ]]; then
   find "${PREFIX}"/ghc-bootstrap/lib/ghc-"${PKG_VERSION}" -name '*_p.a' -delete
   find "${PREFIX}"/ghc-bootstrap/lib/ghc-"${PKG_VERSION}" -name '*.p_o' -delete
 else
-  pushd bootstrap-ghc || exit 1
+  pushd bootstrap-ghc 2>/dev/null || exit 1
     tar cf - ./* | (cd "${PREFIX}/ghc-bootstrap" || exit; tar xf -)
-  popd || exit 1
+  popd 2>/dev/null || exit 1
 
   perl -i -pe 's#\$topdir/../mingw//bin/(llvm-)?##' "${PREFIX}"/ghc-bootstrap/lib/settings
   perl -i -pe 's#-I\$topdir/../mingw//include##g' "${PREFIX}"/ghc-bootstrap/lib/settings
@@ -104,18 +104,11 @@ else
 
   # Fake mingw directory
   mkdir -p "${PREFIX}"/ghc-bootstrap/mingw/
-  pushd "${PREFIX}"/ghc-bootstrap/mingw || exit 1
-    ln -s ../Library/x86_64-w64-mingw32/sysroot/usr/include include
-     ln -s ../Library/x86_64-w64-mingw32/sysroot/usr/lib lib
-   if cmd //c 'mklink include ../../Library/x86_64-w64-mingw32/sysroot/usr/include' 2>/dev/null; then
-      echo "Warning: Symbolic links not available on Windows. Some features may be limited."
-      cmd //c 'mklink lib ..\Library\x86_64-w64-mingw32\sysroot\usr\lib' 2>/dev/null;
-    else
-      mkdir -p include lib
-      echo "Creating fake mingw directory in ${PREFIX}/ghc-bootstrap/mingw" | cat > "${PREFIX}"/ghc-bootstrap/mingw/include/__unused__
-      echo "Creating fake mingw directory in ${PREFIX}/ghc-bootstrap/mingw" | cat > "${PREFIX}"/ghc-bootstrap/mingw/lib/__unused__
-    fi
-  popd || exit 1
+  pushd "${PREFIX}"/ghc-bootstrap/mingw 2>/dev/null || exit 1
+    ls ../../Library/x86_64-w64-mingw32/sysroot/usr/
+    ln -s ../../Library/x86_64-w64-mingw32/sysroot/usr/include include
+    ln -s ../../Library/x86_64-w64-mingw32/sysroot/usr/lib lib
+  popd 2>/dev/null || exit 1
 
   ls "${PREFIX}"/ghc-bootstrap/mingw
   ls "${PREFIX}"/ghc-bootstrap/mingw/include
