@@ -102,7 +102,7 @@ tests:
       - if: linux
         then: ${PREFIX}/ghc-bootstrap/bin/ghc -v -L${CONDA_PREFIX}/lib hello.hs
       - if: not unix
-        then: CALL %PREFIX%/ghc-bootstrap/bin/ghc.exe -v -L%CONDA_PREFIX%/lib hello.hs
+        then: CALL %PREFIX%/ghc-bootstrap/bin/ghc.exe -v -L%CONDA_PREFIX%/lib hello.hs && ls -lrt
       - ./hello || hello.exe
 
 about:
