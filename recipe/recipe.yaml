@@ -89,6 +89,8 @@ tests:
             - ghc-bootstrap/bin/ghcii.sh
             - ghc-bootstrap/bin/ghcii9.10.1.sh
 
+            - ghc-bootstrap/mingw/**
+
 
   - script:
       - if: unix
