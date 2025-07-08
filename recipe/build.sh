@@ -1,6 +1,19 @@
 #!/usr/bin/env bash
 set -eu
 
+# Enable symlinks on Windows if available
+if [[ "$OSTYPE" == "msys" || "$OSTYPE" == "cygwin" ]]; then
+  export MSYS=winsymlinks:nativestrict
+  # Check if we have symlink privileges
+  if ! cmd //c 'mklink test_symlink_target test_symlink_source' 2>/dev/null; then
+    echo "Warning: Symbolic links not available on Windows. Some features may be limited."
+    rm -f test_symlink_target test_symlink_source 2>/dev/null || true
+  else
+    rm -f test_symlink_target test_symlink_source 2>/dev/null || true
+    echo "Symbolic links enabled on Windows"
+  fi
+fi
+
 _log_index=0
 
 run_and_log() {
@@ -98,8 +111,14 @@ else
 
   # Fake mingw directory
   mkdir -p "${PREFIX}"/ghc-bootstrap/mingw/
-  ls "${BUILD_PREFIX}"\\Library\\x86_64-w64-mingw32\\sysroot\\usr
-  touch "${PREFIX}"/ghc-bootstrap/mingw/__unused__
+  pushd "${PREFIX}"/ghc-bootstrap/mingw || exit 1
+    if cmd //c 'mklink include ..\Library\x86_64-w64-mingw32\sysroot\usr\include' 2>/dev/null; then
+      echo "Warning: Symbolic links not available on Windows. Some features may be limited."
+      cmd //c 'mklink lib ..\Library\x86_64-w64-mingw32\sysroot\usr\lib' 2>/dev/null;
+    else
+      echo "Creating fake mingw directory in ${PREFIX}/ghc-bootstrap/mingw" | cat > "${PREFIX}"/ghc-bootstrap/mingw/__unused__
+    fi
+  # ls "${BUILD_PREFIX}"\\Library\\x86_64-w64-mingw32\\sysroot\\usr
 
   # Reduce footprint
   rm -rf "${PREFIX}"/ghc-bootstrap/lib/lib

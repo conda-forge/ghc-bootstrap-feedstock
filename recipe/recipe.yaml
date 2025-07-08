@@ -24,6 +24,8 @@ build:
   number: 0
   # We would not need a x-compiled ghc-bootstrap
   skip: aarch64 or arm64
+  # Enable symlinks on Windows
+  preserve_egg_dir: False
 
 requirements:
   build:
