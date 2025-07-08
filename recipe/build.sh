@@ -118,6 +118,7 @@ else
     else
       echo "Creating fake mingw directory in ${PREFIX}/ghc-bootstrap/mingw" | cat > "${PREFIX}"/ghc-bootstrap/mingw/__unused__
     fi
+  popd || exit 1
   # ls "${BUILD_PREFIX}"\\Library\\x86_64-w64-mingw32\\sysroot\\usr
 
   # Reduce footprint
