@@ -1,19 +1,6 @@
 #!/usr/bin/env bash
 set -eu
 
-# Enable symlinks on Windows if available
-if [[ "$OSTYPE" == "msys" || "$OSTYPE" == "cygwin" ]]; then
-  export MSYS=winsymlinks:nativestrict
-  # Check if we have symlink privileges
-  if ! cmd //c 'mklink test_symlink_target test_symlink_source' 2>/dev/null; then
-    echo "Warning: Symbolic links not available on Windows. Some features may be limited."
-    rm -f test_symlink_target test_symlink_source 2>/dev/null || true
-  else
-    rm -f test_symlink_target test_symlink_source 2>/dev/null || true
-    echo "Symbolic links enabled on Windows"
-  fi
-fi
-
 _log_index=0
 
 run_and_log() {
@@ -109,10 +96,23 @@ else
   perl -i -pe 's#-I\$topdir/../mingw//include##g' "${PREFIX}"/ghc-bootstrap/lib/settings
   perl -i -pe 's#-L\$topdir/../mingw//lib -L\$topdir/../mingw//x86_64-w64-mingw32/lib##g' "${PREFIX}"/ghc-bootstrap/lib/settings
 
+# Enable symlinks on Windows if available
+if [[ "$OSTYPE" == "msys" || "$OSTYPE" == "cygwin" ]]; then
+  export MSYS=winsymlinks:nativestrict
+  # Check if we have symlink privileges
+  if ! cmd //c 'mklink test_symlink_target test_symlink_source' 2>/dev/null; then
+    echo "Warning: Symbolic links not available on Windows. Some features may be limited."
+    rm -f test_symlink_target test_symlink_source 2>/dev/null || true
+  else
+    rm -f test_symlink_target test_symlink_source 2>/dev/null || true
+    echo "Symbolic links enabled on Windows"
+  fi
+fi
+
   # Fake mingw directory
   mkdir -p "${PREFIX}"/ghc-bootstrap/mingw/
   pushd "${PREFIX}"/ghc-bootstrap/mingw || exit 1
-    if cmd //c 'mklink include ..\Library\x86_64-w64-mingw32\sysroot\usr\include' 2>/dev/null; then
+    if cmd //c 'mklink include ../Library/x86_64-w64-mingw32/sysroot/usr/include' 2>/dev/null; then
       echo "Warning: Symbolic links not available on Windows. Some features may be limited."
       cmd //c 'mklink lib ..\Library\x86_64-w64-mingw32\sysroot\usr\lib' 2>/dev/null;
     else
@@ -121,7 +121,8 @@ else
       echo "Creating fake mingw directory in ${PREFIX}/ghc-bootstrap/mingw" | cat > "${PREFIX}"/ghc-bootstrap/mingw/lib/__unused__
     fi
   popd || exit 1
-  # ls "${BUILD_PREFIX}"\\Library\\x86_64-w64-mingw32\\sysroot\\usr
+  ls "${PREFIX}"/ghc-bootstrap/mingw
+  ls "${PREFIX}"/ghc-bootstrap/mingw/include
 
   # Reduce footprint
   rm -rf "${PREFIX}"/ghc-bootstrap/lib/lib
