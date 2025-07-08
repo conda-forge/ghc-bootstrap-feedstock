@@ -105,9 +105,9 @@ else
   # Fake mingw directory
   mkdir -p "${PREFIX}"/ghc-bootstrap/mingw/
   pushd "${PREFIX}"/ghc-bootstrap/mingw 2>/dev/null || exit 1
-    ls ../../Library/x86_64-w64-mingw32/sysroot/usr/
-    ln -s ../../Library/x86_64-w64-mingw32/sysroot/usr/include include
-    ln -s ../../Library/x86_64-w64-mingw32/sysroot/usr/lib lib
+    ls ../../../"${BUILD_PREFIX}"/Library/x86_64-w64-mingw32/sysroot/usr/ || true
+    ln -sf ../../Library/x86_64-w64-mingw32/sysroot/usr/include include
+    ln -sf ../../Library/x86_64-w64-mingw32/sysroot/usr/lib lib
   popd 2>/dev/null || exit 1
 
   ls "${PREFIX}"/ghc-bootstrap/mingw
