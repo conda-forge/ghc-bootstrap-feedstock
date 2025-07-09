@@ -98,13 +98,13 @@ tests:
         else: CALL %PREFIX%/ghc-bootstrap/bin/ghc.exe --version
 
   - script:
-      - echo 'main = putStrLn "Hello conda-forge"' > hello.hs
+      - printf 'main = putStrLn "Hello conda-forge"\n' > hello.hs
       - if: osx
         then: ${PREFIX}/ghc-bootstrap/bin/ghc -v -L${CONDA_PREFIX}/lib -optl-Wl,-rpath,${CONDA_PREFIX}/lib hello.hs
       - if: linux
         then: ${PREFIX}/ghc-bootstrap/bin/ghc -v -L${CONDA_PREFIX}/lib hello.hs
       - if: not unix
-        then: CALL %PREFIX%/ghc-bootstrap/bin/ghc.exe -v -L%CONDA_PREFIX%/lib hello.hs && ls -lrt
+        then: printf "main = putStrLn \"Hello conda-forge\"\r\n" > hello.hs && CALL %PREFIX%/ghc-bootstrap/bin/ghc.exe -v -L%CONDA_PREFIX%/lib hello.hs && ls -lrt
       - ./hello || hello.exe
 
 about:
