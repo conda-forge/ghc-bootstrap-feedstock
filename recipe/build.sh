@@ -98,8 +98,8 @@ else
   perl -i -pe 's#-L\$topdir/../mingw//lib -L\$topdir/../mingw//x86_64-w64-mingw32/lib##g' "${PREFIX}"/ghc-bootstrap/lib/settings
 
   # Add Windows-specific compiler flags to settings
-  perl -i -pe 's/("C compiler flags", ")([^"]*)"/\1\2 -D_WIN32 -DWIN32 -D__MINGW32__ -include sys\/types.h"/g' "${PREFIX}"/ghc-bootstrap/lib/settings
-  perl -i -pe 's/("C++ compiler flags", ")([^"]*)"/\1\2 -D_WIN32 -DWIN32 -D__MINGW32__ -include sys\/types.h"/g' "${PREFIX}"/ghc-bootstrap/lib/settings
+  perl -i -pe 's/("C compiler flags", ")([^"]*)"/\1\2 -D_WIN32 -DWIN32 -D__MINGW32__"/g' "${PREFIX}"/ghc-bootstrap/lib/settings
+  perl -i -pe 's/("C++ compiler flags", ")([^"]*)"/\1\2 -D_WIN32 -DWIN32 -D__MINGW32__"/g' "${PREFIX}"/ghc-bootstrap/lib/settings
 
   cat "${PREFIX}"/ghc-bootstrap/lib/settings
 
