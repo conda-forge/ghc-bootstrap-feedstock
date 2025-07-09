@@ -103,15 +103,19 @@ else
   rm -rf "${PREFIX}"/ghc-bootstrap/mingw
 
   # Fake mingw directory
-  mkdir -p "${PREFIX}"/ghc-bootstrap/mingw
-  pushd "${PREFIX}"/ghc-bootstrap/mingw 2>/dev/null || exit 1
-    # Create symlinks to the sysroot directories
-    mkdir -p "${PREFIX}"/Library/x86_64-w64-mingw32/sysroot/usr/{include,lib,bin,share}
-    ln -sf ../../Library/x86_64-w64-mingw32/sysroot/usr/{include,lib,bin,share} .
-    rm -rf "${PREFIX}"/Library/x86_64-w64-mingw32/sysroot/usr/{include,lib,bin,share}
-  popd 2>/dev/null || exit 1
+  mkdir -p "${PREFIX}"/ghc-bootstrap/mingw/{include,lib,bin,share}
+  echo "Fake mingw directory created at ${PREFIX}/ghc-bootstrap/mingw" | cat >> "${PREFIX}"/ghc-bootstrap/mingw/include/__unused__
+  echo "Fake mingw directory created at ${PREFIX}/ghc-bootstrap/mingw" | cat >> "${PREFIX}"/ghc-bootstrap/mingw/lib/__unused__
+  echo "Fake mingw directory created at ${PREFIX}/ghc-bootstrap/mingw" | cat >> "${PREFIX}"/ghc-bootstrap/mingw/bin/__unused__
+  echo "Fake mingw directory created at ${PREFIX}/ghc-bootstrap/mingw" | cat >> "${PREFIX}"/ghc-bootstrap/mingw/share/__unused__
+  # pushd "${PREFIX}"/ghc-bootstrap/mingw 2>/dev/null || exit 1
+  #   # Create symlinks to the sysroot directories
+  #   mkdir -p "${PREFIX}"/Library/x86_64-w64-mingw32/sysroot/usr/{include,lib,bin,share}
+  #   ln -sf ../../Library/x86_64-w64-mingw32/sysroot/usr/{include,lib,bin,share} .
+  #   rm -rf "${PREFIX}"/Library/x86_64-w64-mingw32/sysroot/usr/{include,lib,bin,share}
+  # popd 2>/dev/null || exit 1
 
-  ls "${PREFIX}"/ghc-bootstrap/mingw || true
+  ls -l "${PREFIX}"/ghc-bootstrap/mingw/* || true
 fi
 
 # Add package licenses
