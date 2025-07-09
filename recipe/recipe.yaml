@@ -26,10 +26,12 @@ build:
   skip: aarch64 or arm64
 
 requirements:
-  build:
+  host:
     - ${{ compiler('c') }}
     - ${{ compiler('cxx') }}
     - ${{ stdlib('c') }}
+    - gmp
+    - libffi
 
     - if: unix
       then:
@@ -40,11 +42,8 @@ requirements:
         - m2-bash
         - m2-coreutils
         - m2-findutils
+        - m2-tar
         - m2-which
-        - m2w64-toolchain
-  host:
-    - gmp
-    - libffi
   run:
     - ${{ compiler('c') }}
     - ${{ stdlib('c') }}
@@ -54,9 +53,6 @@ requirements:
       then:
         - libiconv
         - ncurses
-    - if: not unix
-      then:
-        - m2w64-toolchain
 
 tests:
   - package_contents:
