@@ -92,9 +92,13 @@ else
     tar cf - ./* | (cd "${PREFIX}/ghc-bootstrap" || exit; tar xf -)
   popd 2>/dev/null || exit 1
 
+  # Fix settings file for Windows
   perl -i -pe 's#\$topdir/../mingw//bin/(llvm-)?##' "${PREFIX}"/ghc-bootstrap/lib/settings
   perl -i -pe 's#-I\$topdir/../mingw//include##g' "${PREFIX}"/ghc-bootstrap/lib/settings
   perl -i -pe 's#-L\$topdir/../mingw//lib -L\$topdir/../mingw//x86_64-w64-mingw32/lib##g' "${PREFIX}"/ghc-bootstrap/lib/settings
+
+  # Add Windows-specific compiler flags to settings
+  perl -i -pe 's/("C compiler flags", ")([^"]*")/\1\2 -D_WIN32 -DWIN32 -D__MINGW32__ -include sys\/types.h"/g' "${PREFIX}"/ghc-bootstrap/lib/settings
 
   # Reduce footprint
   rm -rf "${PREFIX}"/ghc-bootstrap/lib/lib
@@ -102,18 +106,18 @@ else
   rm -rf "${PREFIX}"/ghc-bootstrap/doc/html
   rm -rf "${PREFIX}"/ghc-bootstrap/mingw
 
-  # Fake mingw directory
   mkdir -p "${PREFIX}"/ghc-bootstrap/mingw/{include,lib,bin,share}
-  echo "Fake mingw directory created at ${PREFIX}/ghc-bootstrap/mingw" | cat >> "${PREFIX}"/ghc-bootstrap/mingw/include/__unused__
-  echo "Fake mingw directory created at ${PREFIX}/ghc-bootstrap/mingw" | cat >> "${PREFIX}"/ghc-bootstrap/mingw/lib/__unused__
-  echo "Fake mingw directory created at ${PREFIX}/ghc-bootstrap/mingw" | cat >> "${PREFIX}"/ghc-bootstrap/mingw/bin/__unused__
-  echo "Fake mingw directory created at ${PREFIX}/ghc-bootstrap/mingw" | cat >> "${PREFIX}"/ghc-bootstrap/mingw/share/__unused__
-  # pushd "${PREFIX}"/ghc-bootstrap/mingw 2>/dev/null || exit 1
-  #   # Create symlinks to the sysroot directories
-  #   mkdir -p "${PREFIX}"/Library/x86_64-w64-mingw32/sysroot/usr/{include,lib,bin,share}
-  #   ln -sf ../../Library/x86_64-w64-mingw32/sysroot/usr/{include,lib,bin,share} .
-  #   rm -rf "${PREFIX}"/Library/x86_64-w64-mingw32/sysroot/usr/{include,lib,bin,share}
-  # popd 2>/dev/null || exit 1
+  # Link to conda's mingw toolchain
+  if [[ -d "${PREFIX}/Library/mingw-w64" ]]; then
+    ln -sf "${PREFIX}/Library/mingw-w64/include"/* "${PREFIX}"/ghc-bootstrap/mingw/include/ 2>/dev/null || true
+    ln -sf "${PREFIX}/Library/mingw-w64/lib"/* "${PREFIX}"/ghc-bootstrap/mingw/lib/ 2>/dev/null || true
+    ln -sf "${PREFIX}/Library/mingw-w64/bin"/* "${PREFIX}"/ghc-bootstrap/mingw/bin/ 2>/dev/null || true
+  else
+    echo "Fake mingw directory created at ${PREFIX}/ghc-bootstrap/mingw" | cat >> "${PREFIX}"/ghc-bootstrap/mingw/include/__unused__
+    echo "Fake mingw directory created at ${PREFIX}/ghc-bootstrap/mingw" | cat >> "${PREFIX}"/ghc-bootstrap/mingw/lib/__unused__
+    echo "Fake mingw directory created at ${PREFIX}/ghc-bootstrap/mingw" | cat >> "${PREFIX}"/ghc-bootstrap/mingw/bin/__unused__
+    echo "Fake mingw directory created at ${PREFIX}/ghc-bootstrap/mingw" | cat >> "${PREFIX}"/ghc-bootstrap/mingw/share/__unused__
+  fi
 
   ls -l "${PREFIX}"/ghc-bootstrap/mingw/* || true
 fi

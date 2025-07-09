@@ -26,10 +26,12 @@ build:
   skip: aarch64 or arm64
 
 requirements:
-  build:
+  host:
     - ${{ compiler('c') }}
     - ${{ compiler('cxx') }}
     - ${{ stdlib('c') }}
+    - gmp
+    - libffi
 
     - if: unix
       then:
@@ -41,9 +43,6 @@ requirements:
         - m2-coreutils
         - m2-findutils
         - m2-which
-  host:
-    - gmp
-    - libffi
   run:
     - ${{ compiler('c') }}
     - ${{ stdlib('c') }}
@@ -104,8 +103,14 @@ tests:
       - if: linux
         then: ${PREFIX}/ghc-bootstrap/bin/ghc -v -L${CONDA_PREFIX}/lib hello.hs
       - if: not unix
-        then: printf "main = putStrLn \"Hello conda-forge\"\r\n" > hello.hs && CALL %PREFIX%/ghc-bootstrap/bin/ghc.exe -v -L%CONDA_PREFIX%/lib hello.hs && ls -lrt
-      - ./hello || hello.exe
+        then: |
+          echo main = putStrLn "Hello conda-forge" > hello.hs
+          set INCLUDE=%BUILD_PREFIX%\Library\include;%INCLUDE%
+          set LIB=%BUILD_PREFIX%\Library\lib;%LIB%
+          CALL %PREFIX%\ghc-bootstrap\bin\ghc.exe -v -L%BUILD_PREFIX%\Library\lib hello.hs
+      - if: unix
+        then: ./hello
+        else: hello.exe
 
 about:
   homepage: https://haskell.org/ghc/
