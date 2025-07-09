@@ -98,7 +98,8 @@ else
   perl -i -pe 's#-L\$topdir/../mingw//lib -L\$topdir/../mingw//x86_64-w64-mingw32/lib##g' "${PREFIX}"/ghc-bootstrap/lib/settings
 
   # Add Windows-specific compiler flags to settings
-  perl -i -pe 's/("C compiler flags", ")([^"]*")/\1\2 -D_WIN32 -DWIN32 -D__MINGW32__ -include sys\/types.h"/g' "${PREFIX}"/ghc-bootstrap/lib/settings
+  perl -i -pe 's/("C compiler flags", ")([^"]*)"/\1\2 -D_WIN32 -DWIN32 -D__MINGW32__ -include sys\/types.h"/g' "${PREFIX}"/ghc-bootstrap/lib/settings
+  perl -i -pe 's/("C++ compiler flags", ")([^"]*)"/\1\2 -D_WIN32 -DWIN32 -D__MINGW32__ -include sys\/types.h"/g' "${PREFIX}"/ghc-bootstrap/lib/settings
 
   cat "${PREFIX}"/ghc-bootstrap/lib/settings
 
@@ -109,6 +110,7 @@ else
   rm -rf "${PREFIX}"/ghc-bootstrap/mingw
 
   # Link to conda's mingw toolchain
+  mkdir -p "${PREFIX}"/ghc-bootstrap/mingw
   if [[ -d "${PREFIX}"/Library/x86_64-w64-mingw32/sysroot/usr ]]; then
     ln -sf "${PREFIX}"/Library/x86_64-w64-mingw32/sysroot/usr/{bin,include,lib} "${PREFIX}"/ghc-bootstrap/mingw 2>/dev/null || true
   else
