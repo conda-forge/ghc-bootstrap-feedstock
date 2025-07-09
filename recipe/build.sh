@@ -94,12 +94,12 @@ else
 
   # Fix settings file for Windows
   perl -i -pe 's#\$topdir/../mingw//bin/(llvm-)?##' "${PREFIX}"/ghc-bootstrap/lib/settings
-  perl -i -pe 's#-I\$topdir/../mingw//include##g' "${PREFIX}"/ghc-bootstrap/lib/settings
-  perl -i -pe 's#-L\$topdir/../mingw//lib -L\$topdir/../mingw//x86_64-w64-mingw32/lib##g' "${PREFIX}"/ghc-bootstrap/lib/settings
+  # perl -i -pe 's#-I\$topdir/../mingw//include##g' "${PREFIX}"/ghc-bootstrap/lib/settings
+  # perl -i -pe 's#-L\$topdir/../mingw//lib -L\$topdir/../mingw//x86_64-w64-mingw32/lib##g' "${PREFIX}"/ghc-bootstrap/lib/settings
 
   # Add Windows-specific compiler flags to settings
   perl -i -pe 's/("C compiler flags", ")([^"]*)"/\1\2 -D_WIN32 -DWIN32 -D__MINGW32__"/g' "${PREFIX}"/ghc-bootstrap/lib/settings
-  perl -i -pe 's/("C++ compiler flags", ")([^"]*)"/\1\2 -D_WIN32 -DWIN32 -D__MINGW32__"/g' "${PREFIX}"/ghc-bootstrap/lib/settings
+  perl -i -pe 's/("C\+\+ compiler flags", ")([^"]*)"/\1\2 -D_WIN32 -DWIN32 -D__MINGW32__"/g' "${PREFIX}"/ghc-bootstrap/lib/settings
 
   cat "${PREFIX}"/ghc-bootstrap/lib/settings
 
@@ -111,8 +111,19 @@ else
 
   # Link to conda's mingw toolchain
   mkdir -p "${PREFIX}"/ghc-bootstrap/mingw
+
+  find "${PREFIX}" -name llvm -type d || true
+  find "${PREFIX}" -name llvm-c -type d || true
+  find "${PREFIX}" -name lzma -type d || true
+  find "${PREFIX}" -name cldemoteintrin.h || true
+  find "${PREFIX}" -name libclangParse.a || true
+  find "${PREFIX}" -name localcharset.h || true
+  find "${PREFIX}" -name napcertrelyingparty.h || true
+
+  # We probably need to rebuild mingw/{include,lib,x86_64-w64-mingw32} with symlinks
   if [[ -d "${PREFIX}"/Library/x86_64-w64-mingw32/sysroot/usr ]]; then
-    ln -sf "${PREFIX}"/Library/x86_64-w64-mingw32/sysroot/usr/{bin,include,lib} "${PREFIX}"/ghc-bootstrap/mingw 2>/dev/null || true
+    mkdir -p "${PREFIX}"/ghc-bootstrap/mingw/x86_64-w64-mingw32
+    ln -sf "${PREFIX}"/Library/x86_64-w64-mingw32/sysroot/usr/{bin,include,lib} "${PREFIX}"/ghc-bootstrap/mingw/x86_64-w64-mingw32 2>/dev/null || true
   else
     mkdir -p "${PREFIX}"/ghc-bootstrap/mingw/{include,lib,bin,share}
     echo "Fake mingw directory created at ${PREFIX}/ghc-bootstrap/mingw" | cat >> "${PREFIX}"/ghc-bootstrap/mingw/include/__unused__
