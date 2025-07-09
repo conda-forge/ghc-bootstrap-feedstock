@@ -39,6 +39,7 @@ requirements:
         - patchelf
         - perl
       else:
+        - binutils
         - m2-bash
         - m2-coreutils
         - m2-findutils

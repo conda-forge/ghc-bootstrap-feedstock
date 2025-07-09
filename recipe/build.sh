@@ -111,30 +111,11 @@ else
   rm -rf "${PREFIX}"/ghc-bootstrap/doc/html
   rm -rf "${PREFIX}"/ghc-bootstrap/mingw
 
-  # Link to conda's mingw toolchain
-  mkdir -p "${PREFIX}"/ghc-bootstrap/mingw
-
-  find "${PREFIX}" -name llvm -type d || true
-  find "${PREFIX}" -name llvm-c -type d || true
-  find "${PREFIX}" -name lzma -type d || true
-  find "${PREFIX}" -name cldemoteintrin.h || true
-  find "${PREFIX}" -name "libclangParse*" || true
-  find "${PREFIX}" -name localcharset.h || true
-  find "${PREFIX}" -name napcertrelyingparty.h || true
-
-  # We probably need to rebuild mingw/{include,lib,x86_64-w64-mingw32} with symlinks
-  # if [[ -d "${PREFIX}"/Library/x86_64-w64-mingw32/sysroot/usr ]]; then
-  #   mkdir -p "${PREFIX}"/ghc-bootstrap/mingw/x86_64-w64-mingw32
-  #   ln -sf "${PREFIX}"/Library/x86_64-w64-mingw32/sysroot/usr/{bin,include,lib} "${PREFIX}"/ghc-bootstrap/mingw/x86_64-w64-mingw32 2>/dev/null || true
-  # else
-    mkdir -p "${PREFIX}"/ghc-bootstrap/mingw/{include,lib,bin,share}
-    echo "Fake mingw directory created at ${PREFIX}/ghc-bootstrap/mingw" | cat >> "${PREFIX}"/ghc-bootstrap/mingw/include/__unused__
-    echo "Fake mingw directory created at ${PREFIX}/ghc-bootstrap/mingw" | cat >> "${PREFIX}"/ghc-bootstrap/mingw/lib/__unused__
-    echo "Fake mingw directory created at ${PREFIX}/ghc-bootstrap/mingw" | cat >> "${PREFIX}"/ghc-bootstrap/mingw/bin/__unused__
-    echo "Fake mingw directory created at ${PREFIX}/ghc-bootstrap/mingw" | cat >> "${PREFIX}"/ghc-bootstrap/mingw/share/__unused__
-  # fi
-
-  ls -l "${PREFIX}"/ghc-bootstrap/mingw/* || true
+  mkdir -p "${PREFIX}"/ghc-bootstrap/mingw/{include,lib,bin,share}
+  echo "Fake mingw directory created at ${PREFIX}/ghc-bootstrap/mingw" | cat >> "${PREFIX}"/ghc-bootstrap/mingw/include/__unused__
+  echo "Fake mingw directory created at ${PREFIX}/ghc-bootstrap/mingw" | cat >> "${PREFIX}"/ghc-bootstrap/mingw/lib/__unused__
+  echo "Fake mingw directory created at ${PREFIX}/ghc-bootstrap/mingw" | cat >> "${PREFIX}"/ghc-bootstrap/mingw/bin/__unused__
+  echo "Fake mingw directory created at ${PREFIX}/ghc-bootstrap/mingw" | cat >> "${PREFIX}"/ghc-bootstrap/mingw/share/__unused__
 fi
 
 # Add package licenses
