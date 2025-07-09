@@ -94,8 +94,10 @@ else
 
   # Fix settings file for Windows
   perl -i -pe 's#\$topdir/../mingw//bin/(llvm-)?##' "${PREFIX}"/ghc-bootstrap/lib/settings
-  # perl -i -pe 's#-I\$topdir/../mingw//include##g' "${PREFIX}"/ghc-bootstrap/lib/settings
-  # perl -i -pe 's#-L\$topdir/../mingw//lib -L\$topdir/../mingw//x86_64-w64-mingw32/lib##g' "${PREFIX}"/ghc-bootstrap/lib/settings
+  perl -i -pe 's#-I\$topdir/../mingw//include#-I\$topdir/../../Library/include#g' "${PREFIX}"/ghc-bootstrap/lib/settings
+  perl -i -pe 's#-L\$topdir/../mingw//lib#-L\$topdir/../../Library/lib#g' "${PREFIX}"/ghc-bootstrap/lib/settings
+  perl -i -pe 's#-L\$topdir/../mingw//x86_64-w64-mingw32/lib#-L\$topdir/../../Library/x86_64-w64-mingw32/sysroot/usr/lib#g' "${PREFIX}"/ghc-bootstrap/lib/settings
+  perl -i -pe 's#x86_64-unknown-mingw32#x86_64-w64-windows-gnu#g' "${PREFIX}"/ghc-bootstrap/lib/settings
 
   # Add Windows-specific compiler flags to settings
   perl -i -pe 's/("C compiler flags", ")([^"]*)"/\1\2 -D_WIN32 -DWIN32 -D__MINGW32__"/g' "${PREFIX}"/ghc-bootstrap/lib/settings
@@ -116,21 +118,21 @@ else
   find "${PREFIX}" -name llvm-c -type d || true
   find "${PREFIX}" -name lzma -type d || true
   find "${PREFIX}" -name cldemoteintrin.h || true
-  find "${PREFIX}" -name libclangParse.a || true
+  find "${PREFIX}" -name "libclangParse*" || true
   find "${PREFIX}" -name localcharset.h || true
   find "${PREFIX}" -name napcertrelyingparty.h || true
 
   # We probably need to rebuild mingw/{include,lib,x86_64-w64-mingw32} with symlinks
-  if [[ -d "${PREFIX}"/Library/x86_64-w64-mingw32/sysroot/usr ]]; then
-    mkdir -p "${PREFIX}"/ghc-bootstrap/mingw/x86_64-w64-mingw32
-    ln -sf "${PREFIX}"/Library/x86_64-w64-mingw32/sysroot/usr/{bin,include,lib} "${PREFIX}"/ghc-bootstrap/mingw/x86_64-w64-mingw32 2>/dev/null || true
-  else
+  # if [[ -d "${PREFIX}"/Library/x86_64-w64-mingw32/sysroot/usr ]]; then
+  #   mkdir -p "${PREFIX}"/ghc-bootstrap/mingw/x86_64-w64-mingw32
+  #   ln -sf "${PREFIX}"/Library/x86_64-w64-mingw32/sysroot/usr/{bin,include,lib} "${PREFIX}"/ghc-bootstrap/mingw/x86_64-w64-mingw32 2>/dev/null || true
+  # else
     mkdir -p "${PREFIX}"/ghc-bootstrap/mingw/{include,lib,bin,share}
     echo "Fake mingw directory created at ${PREFIX}/ghc-bootstrap/mingw" | cat >> "${PREFIX}"/ghc-bootstrap/mingw/include/__unused__
     echo "Fake mingw directory created at ${PREFIX}/ghc-bootstrap/mingw" | cat >> "${PREFIX}"/ghc-bootstrap/mingw/lib/__unused__
     echo "Fake mingw directory created at ${PREFIX}/ghc-bootstrap/mingw" | cat >> "${PREFIX}"/ghc-bootstrap/mingw/bin/__unused__
     echo "Fake mingw directory created at ${PREFIX}/ghc-bootstrap/mingw" | cat >> "${PREFIX}"/ghc-bootstrap/mingw/share/__unused__
-  fi
+  # fi
 
   ls -l "${PREFIX}"/ghc-bootstrap/mingw/* || true
 fi
