@@ -100,19 +100,19 @@ else
   # Add Windows-specific compiler flags to settings
   perl -i -pe 's/("C compiler flags", ")([^"]*")/\1\2 -D_WIN32 -DWIN32 -D__MINGW32__ -include sys\/types.h"/g' "${PREFIX}"/ghc-bootstrap/lib/settings
 
+  cat "${PREFIX}"/ghc-bootstrap/lib/settings
+
   # Reduce footprint
   rm -rf "${PREFIX}"/ghc-bootstrap/lib/lib
   rm -rf "${PREFIX}"/ghc-bootstrap/lib/doc/html
   rm -rf "${PREFIX}"/ghc-bootstrap/doc/html
   rm -rf "${PREFIX}"/ghc-bootstrap/mingw
 
-  mkdir -p "${PREFIX}"/ghc-bootstrap/mingw/{include,lib,bin,share}
   # Link to conda's mingw toolchain
-  if [[ -d "${PREFIX}/Library/mingw-w64" ]]; then
-    ln -sf "${PREFIX}/Library/mingw-w64/include"/* "${PREFIX}"/ghc-bootstrap/mingw/include/ 2>/dev/null || true
-    ln -sf "${PREFIX}/Library/mingw-w64/lib"/* "${PREFIX}"/ghc-bootstrap/mingw/lib/ 2>/dev/null || true
-    ln -sf "${PREFIX}/Library/mingw-w64/bin"/* "${PREFIX}"/ghc-bootstrap/mingw/bin/ 2>/dev/null || true
+  if [[ -d "${PREFIX}"/Library/x86_64-w64-mingw32/sysroot/usr ]]; then
+    ln -sf "${PREFIX}"/Library/x86_64-w64-mingw32/sysroot/usr/{bin,include,lib} "${PREFIX}"/ghc-bootstrap/mingw 2>/dev/null || true
   else
+    mkdir -p "${PREFIX}"/ghc-bootstrap/mingw/{include,lib,bin,share}
     echo "Fake mingw directory created at ${PREFIX}/ghc-bootstrap/mingw" | cat >> "${PREFIX}"/ghc-bootstrap/mingw/include/__unused__
     echo "Fake mingw directory created at ${PREFIX}/ghc-bootstrap/mingw" | cat >> "${PREFIX}"/ghc-bootstrap/mingw/lib/__unused__
     echo "Fake mingw directory created at ${PREFIX}/ghc-bootstrap/mingw" | cat >> "${PREFIX}"/ghc-bootstrap/mingw/bin/__unused__
