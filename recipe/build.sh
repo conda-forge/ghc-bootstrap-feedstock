@@ -105,11 +105,10 @@ else
   # Fake mingw directory
   mkdir -p "${PREFIX}"/ghc-bootstrap/mingw
   pushd "${PREFIX}"/ghc-bootstrap/mingw 2>/dev/null || exit 1
-    ls "${BUILD_PREFIX}"/Library/x86_64-w64-mingw32/sysroot/usr/ || true
-    ls
-    # ln -sf ../../Library/x86_64-w64-mingw32/sysroot/usr/include include
-    # ln -sf ../../Library/x86_64-w64-mingw32/sysroot/usr/lib lib
-
+    # Create symlinks to the sysroot directories
+    mkdir -p "${PREFIX}"/Library/x86_64-w64-mingw32/sysroot/usr/{include,lib,bin,share}
+    ln -sf ../../Library/x86_64-w64-mingw32/sysroot/usr/{include,lib,bin,share} .
+    rm -rf "${PREFIX}"/Library/x86_64-w64-mingw32/sysroot/usr/{include,lib,bin,share}
   popd 2>/dev/null || exit 1
 
   ls "${PREFIX}"/ghc-bootstrap/mingw || true
