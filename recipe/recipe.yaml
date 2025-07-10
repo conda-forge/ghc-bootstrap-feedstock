@@ -54,6 +54,8 @@ requirements:
       then:
         - libiconv
         - ncurses
+      else:
+        - binutils
 
 tests:
   - package_contents:
