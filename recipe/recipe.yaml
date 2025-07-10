@@ -56,7 +56,7 @@ requirements:
         - ncurses
       else:
         - binutils
-        # - ld_impl_win-64
+        - ld_impl_win-64
 
 tests:
   - package_contents:
@@ -112,6 +112,7 @@ tests:
           echo main = putStrLn "Hello conda-forge" > hello.hs
           set INCLUDE=%BUILD_PREFIX%\Library\include;%INCLUDE%
           set LIB=%BUILD_PREFIX%\Library\lib;%LIB%
+          set LD=ld.exe
           CALL %PREFIX%\ghc-bootstrap\bin\ghc.exe -v -L%BUILD_PREFIX%\Library\lib hello.hs
       - if: unix
         then: ./hello
