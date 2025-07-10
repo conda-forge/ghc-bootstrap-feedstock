@@ -56,7 +56,6 @@ requirements:
         - ncurses
       else:
         - binutils
-        - ld_impl_win-64
 
 tests:
   - package_contents:
