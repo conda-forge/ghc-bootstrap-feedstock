@@ -107,7 +107,6 @@ else
   # perl -i -pe 's#("windres command", ")([^"]*)"#\1\$topdir/../../Library/x86_64-w64-mingw32/bin/windres.exe"#g' "${PREFIX}"/ghc-bootstrap/lib/settings
 
   cp "${RECIPE_DIR}"/windres.bat "${PREFIX}"/ghc-bootstrap/bin/windres.bat
-EOF
 
   cat "${PREFIX}"/ghc-bootstrap/lib/settings
 
