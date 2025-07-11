@@ -61,10 +61,11 @@ requirements:
         - ncurses
       else:
         - binutils
+        - libwinpthread
+        - m2w64-crt-git
         - m2w64-gcc-libs
         - m2w64-gcc-libs-core
         - m2w64-gmp
-        - m2w64-libwinpthread-git
 
 tests:
   - package_contents:
