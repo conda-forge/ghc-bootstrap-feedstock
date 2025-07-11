@@ -43,6 +43,7 @@ requirements:
         - m2-bash
         - m2-coreutils
         - m2-findutils
+        - m2-grep
         - m2-tar
         - m2-which
         - m2w64-gcc-libs
