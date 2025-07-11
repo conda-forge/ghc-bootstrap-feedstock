@@ -45,6 +45,8 @@ requirements:
         - m2-findutils
         - m2-tar
         - m2-which
+        - m2w64-gcc-libs
+        - m2w64-gcc-libs-core
   run:
     - ${{ compiler('c') }}
     - ${{ stdlib('c') }}
@@ -56,6 +58,8 @@ requirements:
         - ncurses
       else:
         - binutils
+        - m2w64-gcc-libs
+        - m2w64-gcc-libs-core
 
 tests:
   - package_contents:
