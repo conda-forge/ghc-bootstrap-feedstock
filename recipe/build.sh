@@ -93,7 +93,8 @@ else
   popd 2>/dev/null || exit 1
 
   # Fix settings file for Windows
-  find ${PREFIX} -name "windres*"
+  find "${PREFIX}" -name "*mingw32*"
+  find "${PREFIX}" -name "*msvcrt*"
   perl -i -pe 's#\$topdir/../mingw//bin/(llvm-)?##' "${PREFIX}"/ghc-bootstrap/lib/settings
   perl -i -pe 's#-I\$topdir/../mingw//include#-I\$topdir/../../Library/include#g' "${PREFIX}"/ghc-bootstrap/lib/settings
   perl -i -pe 's#-L\$topdir/../mingw//lib#-L\$topdir/../../Library/lib#g' "${PREFIX}"/ghc-bootstrap/lib/settings
