@@ -105,8 +105,9 @@ else
   # Add Windows-specific compiler flags to settings
   perl -i -pe 's/("C compiler flags", ")([^"]*)"/\1\2 -mno-stack-arg-probe -D_WIN32 -DWIN32 -D__MINGW32__ -Dpid_t=int -Duid_t=int -Dgid_t=int -Dmode_t=int"/g' "${PREFIX}"/ghc-bootstrap/lib/settings
   perl -i -pe 's/("C\+\+ compiler flags", ")([^"]*)"/\1\2 -mno-stack-arg-probe -D_WIN32 -DWIN32 -D__MINGW32__ -Dpid_t=int -Duid_t=int -Dgid_t=int -Dmode_t=int"/g' "${PREFIX}"/ghc-bootstrap/lib/settings
-  perl -i -pe 's/("C compiler link flags", ")([^"]*)"/\1\2 -fuse-ld=bfd -Wl,--defsym,___chkstk_ms=__chkstk -lmingw32 -lmingwex -lmsvcrt"/g' "${PREFIX}"/ghc-bootstrap/lib/settings
+  perl -i -pe 's/("C compiler link flags", ")([^"]*)"/\1\2 -fuse-ld=bfd -lmingw32 -lmingwex -lmsvcrt"/g' "${PREFIX}"/ghc-bootstrap/lib/settings
   perl -i -pe 's#("windres command", ")[^"]*"#\1\$topdir/../bin/windres.bat"#g' "${PREFIX}"/ghc-bootstrap/lib/settings
+  perl -i -pe 's#-fstack-check##g' "${PREFIX}"/ghc-bootstrap/lib/settings
 
   cp "${RECIPE_DIR}"/windres.bat "${PREFIX}"/ghc-bootstrap/bin/windres.bat
 
