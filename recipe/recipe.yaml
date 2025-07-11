@@ -63,6 +63,8 @@ requirements:
         - binutils
         - m2w64-gcc-libs
         - m2w64-gcc-libs-core
+        - m2w64-gmp
+        - m2w64-libwinpthread-git
 
 tests:
   - package_contents:
