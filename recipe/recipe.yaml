@@ -50,16 +50,17 @@ requirements:
   run:
     - ${{ compiler('c') }}
     - ${{ stdlib('c') }}
-    - gmp
     - libffi
     - if: unix
       then:
+        - gmp
         - libiconv
         - ncurses
       else:
         - binutils
         - m2w64-gcc-libs
         - m2w64-gcc-libs-core
+        - m2w64-gmp
 
 tests:
   - package_contents:
