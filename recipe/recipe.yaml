@@ -30,11 +30,11 @@ requirements:
     - ${{ compiler('c') }}
     - ${{ compiler('cxx') }}
     - ${{ stdlib('c') }}
-    - gmp
-    - libffi
 
     - if: unix
       then:
+        - gmp
+        - libffi
         - make
         - patchelf
         - perl
@@ -47,6 +47,8 @@ requirements:
         - m2-which
         - m2w64-gcc-libs
         - m2w64-gcc-libs-core
+        - m2w64-gmp
+        - m2w64-libffi
   run:
     - ${{ compiler('c') }}
     - ${{ stdlib('c') }}
@@ -60,7 +62,6 @@ requirements:
         - binutils
         - m2w64-gcc-libs
         - m2w64-gcc-libs-core
-        - m2w64-gmp
 
 tests:
   - package_contents:
