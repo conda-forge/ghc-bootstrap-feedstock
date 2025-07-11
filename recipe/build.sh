@@ -95,7 +95,7 @@ else
   # Fix settings file for Windows
   find "${PREFIX}" -name "*mingw32*"
   find "${PREFIX}" -name "*msvcrt*"
-  find "$PREFIX" -name "libgcc*.a" -exec nm {} \; 2>/dev/null | grep chkstk
+  find "$PREFIX" -name "libgcc*.*" -exec nm {} \; 2>/dev/null | grep chkstk
   find "$PREFIX" -name "crt*.o" -exec nm {} \; 2>/dev/null | grep chkstk
   perl -i -pe 's#\$topdir/../mingw//bin/(llvm-)?##' "${PREFIX}"/ghc-bootstrap/lib/settings
   perl -i -pe 's#-I\$topdir/../mingw//include#-I\$topdir/../../Library/include#g' "${PREFIX}"/ghc-bootstrap/lib/settings
