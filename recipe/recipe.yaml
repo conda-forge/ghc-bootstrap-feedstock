@@ -46,6 +46,7 @@ requirements:
         - m2-grep
         - m2-tar
         - m2-which
+        - m2w64-crt-git
         - m2w64-gcc-libs
         - m2w64-gcc-libs-core
         - m2w64-gmp
