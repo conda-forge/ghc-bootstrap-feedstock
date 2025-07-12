@@ -48,7 +48,6 @@ requirements:
         - mingw-w64-ucrt-x86_64-binutils
         - mingw-w64-ucrt-x86_64-crt-git
         - mingw-w64-ucrt-x86_64-gcc-libs
-        - mingw-w64-ucrt-x86_64-gcc-libs-core
         - mingw-w64-ucrt-x86_64-gmp
         - mingw-w64-ucrt-x86_64-libwinpthread-git
         - mingw-w64-ucrt-x86_64-windows-default-manifest
@@ -65,7 +64,6 @@ requirements:
         - mingw-w64-ucrt-x86_64-binutils
         - mingw-w64-ucrt-x86_64-crt-git
         - mingw-w64-ucrt-x86_64-gcc-libs
-        - mingw-w64-ucrt-x86_64-gcc-libs-core
         - mingw-w64-ucrt-x86_64-gmp
         - mingw-w64-ucrt-x86_64-libwinpthread-git
         - mingw-w64-ucrt-x86_64-windows-default-manifest
