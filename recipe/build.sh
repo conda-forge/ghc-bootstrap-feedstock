@@ -115,11 +115,13 @@ else
   perl -i -pe 's#x86_64-unknown-mingw32#x86_64-w64-mingw32#g' "${PREFIX}"/ghc-bootstrap/lib/settings
 
   # Add Windows-specific compiler flags to settings
-  perl -i -pe 's/("C compiler flags", ")([^"]*)"/\1\2 -mno-stack-arg-probe -D_WIN32 -DWIN32 -D__MINGW32__ -Dpid_t=int -Duid_t=int -Dgid_t=int -Dmode_t=int"/g' "${PREFIX}"/ghc-bootstrap/lib/settings
-  perl -i -pe 's/("C\+\+ compiler flags", ")([^"]*)"/\1\2 -mno-stack-arg-probe -D_WIN32 -DWIN32 -D__MINGW32__ -Dpid_t=int -Duid_t=int -Dgid_t=int -Dmode_t=int"/g' "${PREFIX}"/ghc-bootstrap/lib/settings
-  perl -i -pe 's/("C compiler link flags", ")([^"]*)"/\1\2 -fuse-ld=bfd -Wl,--undefined=__security_cookie -Wl,--undefined=__security_check_cookie -lmsvcrt -lkernel32 -luser32 -ladvapi32 -lshell32 -lole32 -lmingw32 -lmingwex -lgcc_s_seh-1"/g' "${PREFIX}"/ghc-bootstrap/lib/settings
+  perl -i -pe 's/("C compiler command", ")([^"]*)"/\1gcc.exe"/g' "${PREFIX}"/ghc-bootstrap/lib/settings
+  perl -i -pe 's/("C\+\+ compiler command", ")([^"]*)"/\1g++.exe"/g' "${PREFIX}"/ghc-bootstrap/lib/settings
+  # perl -i -pe 's/("C compiler flags", ")([^"]*)"/\1\2 -mno-stack-arg-probe -D_WIN32 -DWIN32 -D__MINGW32__ -Dpid_t=int -Duid_t=int -Dgid_t=int -Dmode_t=int"/g' "${PREFIX}"/ghc-bootstrap/lib/settings
+  # perl -i -pe 's/("C\+\+ compiler flags", ")([^"]*)"/\1\2 -mno-stack-arg-probe -D_WIN32 -DWIN32 -D__MINGW32__ -Dpid_t=int -Duid_t=int -Dgid_t=int -Dmode_t=int"/g' "${PREFIX}"/ghc-bootstrap/lib/settings
+  # perl -i -pe 's/("C compiler link flags", ")([^"]*)"/\1\2 -fuse-ld=bfd -Wl,--undefined=__security_cookie -Wl,--undefined=__security_check_cookie -lmsvcrt -lkernel32 -luser32 -ladvapi32 -lshell32 -lole32 -lmingw32 -lmingwex -lgcc_s_seh-1"/g' "${PREFIX}"/ghc-bootstrap/lib/settings
   perl -i -pe 's#("windres command", ")[^"]*"#\1\$topdir/../bin/windres.bat"#g' "${PREFIX}"/ghc-bootstrap/lib/settings
-  perl -i -pe 's#-fstack-check##g' "${PREFIX}"/ghc-bootstrap/lib/settings
+  # perl -i -pe 's#-fstack-check##g' "${PREFIX}"/ghc-bootstrap/lib/settings
 
   cp "${RECIPE_DIR}"/windres.bat "${PREFIX}"/ghc-bootstrap/bin/windres.bat
 
