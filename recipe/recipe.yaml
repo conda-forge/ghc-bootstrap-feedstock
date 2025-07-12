@@ -58,7 +58,7 @@ requirements:
         - ncurses
       else:
         - binutils
-        - libgcc
+        # - libgcc
 
 tests:
   - package_contents:
