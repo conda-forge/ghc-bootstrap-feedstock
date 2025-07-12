@@ -1,24 +1,24 @@
 channel_sources:
-  - conda-forge/label/m2w64-experimental  # [not unix]
-  - conda-forge
+  - conda-forge/label/m2w64-experimental,conda-forge  # [not unix]
+  - conda-forge                                       # [unix]
   
 c_stdlib:
-  - sysroot                               # [linux]
-  - macosx_deployment_target              # [osx]
-  - m2w64-sysroot                         # [not unix]
+  - sysroot                                           # [linux]
+  - macosx_deployment_target                          # [osx]
+  - m2w64-sysroot                                     # [not unix]
 c_stdlib_version:
-  - "10.13"                               # [osx and x86_64]
-  - "11.0"                                # [osx and arm64]
-  - "2.28"                                # [linux]
-  - "12"                                  # [not unix]
+  - "10.13"                                           # [osx and x86_64]
+  - "11.0"                                            # [osx and arm64]
+  - "2.28"                                            # [linux]
+  - "12"                                              # [not unix]
 
 c_compiler:
   - clang
 c_compiler_version:
-  - 19                                    # [unix and not aarch64]
-  - 18                                    # [not unix or aarch64]
+  - 19                                                # [unix and not aarch64]
+  - 18                                                # [not unix or aarch64]
 cxx_compiler:
   - clangxx
 cxx_compiler_version:
-  - 19                                    # [unix and not aarch64]
-  - 18                                    # [not unix or aarch64]
+  - 19                                                # [unix and not aarch64]
+  - 18                                                # [not unix or aarch64]
