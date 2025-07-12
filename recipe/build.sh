@@ -100,6 +100,12 @@ else
   find "$PREFIX" -name "crt*.o" || true
   find "$PREFIX" -name "libgcc*.*" -exec nm {} \; 2>/dev/null | grep chkstk || true
   find "$PREFIX" -name "crt*.o" -exec nm {} \; 2>/dev/null | grep chkstk || true
+  
+  echo ""
+  echo "Looking at mingw libs"
+  find "$PREFIX"/ghc-bootstrap/mingw -name "*.a" -exec nm {} \; 2>/dev/null | grep chkstk || true
+  echo ""
+  
   perl -i -pe 's#\$topdir/../mingw//bin/(llvm-)?##' "${PREFIX}"/ghc-bootstrap/lib/settings
   perl -i -pe 's#-I\$topdir/../mingw//include#-I\$topdir/../../Library/include#g' "${PREFIX}"/ghc-bootstrap/lib/settings
   perl -i -pe 's#-L\$topdir/../mingw//lib#-L\$topdir/../../Library/lib#g' "${PREFIX}"/ghc-bootstrap/lib/settings
@@ -110,7 +116,7 @@ else
   # Add Windows-specific compiler flags to settings
   perl -i -pe 's/("C compiler flags", ")([^"]*)"/\1\2 -mno-stack-arg-probe -D_WIN32 -DWIN32 -D__MINGW32__ -Dpid_t=int -Duid_t=int -Dgid_t=int -Dmode_t=int"/g' "${PREFIX}"/ghc-bootstrap/lib/settings
   perl -i -pe 's/("C\+\+ compiler flags", ")([^"]*)"/\1\2 -mno-stack-arg-probe -D_WIN32 -DWIN32 -D__MINGW32__ -Dpid_t=int -Duid_t=int -Dgid_t=int -Dmode_t=int"/g' "${PREFIX}"/ghc-bootstrap/lib/settings
-  perl -i -pe 's/("C compiler link flags", ")([^"]*)"/\1\2 -fuse-ld=bfd -lmingw32 -lmingwex -lgcc_s_seh-1 -lmsvcrt -lkernel32 -luser32 -ladvapi32 -lshell32 -lole32"/g' "${PREFIX}"/ghc-bootstrap/lib/settings
+  perl -i -pe 's/("C compiler link flags", ")([^"]*)"/\1\2 -fuse-ld=bfd -Wl,--undefined=__security_cookie -Wl,--undefined=__security_check_cookie -lmsvcrt -lkernel32 -luser32 -ladvapi32 -lshell32 -lole32 -lmingw32 -lmingwex -lgcc_s_seh-1"/g' "${PREFIX}"/ghc-bootstrap/lib/settings
   perl -i -pe 's#("windres command", ")[^"]*"#\1\$topdir/../bin/windres.bat"#g' "${PREFIX}"/ghc-bootstrap/lib/settings
   perl -i -pe 's#-fstack-check##g' "${PREFIX}"/ghc-bootstrap/lib/settings
 
