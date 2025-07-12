@@ -39,13 +39,14 @@ requirements:
         - patchelf
         - perl
       else:
+        - binutils
         - m2-bash
         - m2-coreutils
         - m2-findutils
         - m2-grep
         - m2-tar
         - m2-which
-        - mingw-w64-ucrt-x86_64-binutils
+        # - mingw-w64-ucrt-x86_64-binutils
         - mingw-w64-ucrt-x86_64-crt-git
         - mingw-w64-ucrt-x86_64-gcc-libs
         - mingw-w64-ucrt-x86_64-gmp
@@ -61,7 +62,8 @@ requirements:
         - libiconv
         - ncurses
       else:
-        - mingw-w64-ucrt-x86_64-binutils
+        # - mingw-w64-ucrt-x86_64-binutils
+        - binutils
         - mingw-w64-ucrt-x86_64-crt-git
         - mingw-w64-ucrt-x86_64-gcc-libs
         - mingw-w64-ucrt-x86_64-gmp
