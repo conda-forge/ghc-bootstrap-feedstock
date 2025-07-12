@@ -103,6 +103,7 @@ else
   
   echo ""
   echo "Looking at mingw libs"
+  find "$PREFIX"/ghc-bootstrap/mingw -name "*.a" || true
   find "$PREFIX"/ghc-bootstrap/mingw -name "*.a" -exec nm {} \; 2>/dev/null | grep chkstk || true
   echo ""
   
