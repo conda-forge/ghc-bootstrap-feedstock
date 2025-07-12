@@ -102,14 +102,14 @@ else
   perl -i -pe 's#\$topdir/../mingw//bin/(llvm-)?##' "${PREFIX}"/ghc-bootstrap/lib/settings
   perl -i -pe 's#-I\$topdir/../mingw//include#-I\$topdir/../../Library/include#g' "${PREFIX}"/ghc-bootstrap/lib/settings
   perl -i -pe 's#-L\$topdir/../mingw//lib#-L\$topdir/../../Library/lib#g' "${PREFIX}"/ghc-bootstrap/lib/settings
-  perl -i -pe 's#-L\$topdir/../mingw//x86_64-w64-mingw32/lib#-L\$topdir/../../Library/x86_64-w64-mingw32/sysroot/usr/lib#g' "${PREFIX}"/ghc-bootstrap/lib/settings
+  perl -i -pe 's#-L\$topdir/../mingw//x86_64-w64-mingw32/lib#-L\$topdir/../../Library/bin -L\$topdir/../../Library/x86_64-w64-mingw32/sysroot/usr/lib#g' "${PREFIX}"/ghc-bootstrap/lib/settings
   # perl -i -pe 's#x86_64-unknown-mingw32#x86_64-w64-windows-gnu#g' "${PREFIX}"/ghc-bootstrap/lib/settings
   perl -i -pe 's#x86_64-unknown-mingw32#x86_64-w64-mingw32#g' "${PREFIX}"/ghc-bootstrap/lib/settings
 
   # Add Windows-specific compiler flags to settings
   perl -i -pe 's/("C compiler flags", ")([^"]*)"/\1\2 -mno-stack-arg-probe -D_WIN32 -DWIN32 -D__MINGW32__ -Dpid_t=int -Duid_t=int -Dgid_t=int -Dmode_t=int"/g' "${PREFIX}"/ghc-bootstrap/lib/settings
   perl -i -pe 's/("C\+\+ compiler flags", ")([^"]*)"/\1\2 -mno-stack-arg-probe -D_WIN32 -DWIN32 -D__MINGW32__ -Dpid_t=int -Duid_t=int -Dgid_t=int -Dmode_t=int"/g' "${PREFIX}"/ghc-bootstrap/lib/settings
-  perl -i -pe 's/("C compiler link flags", ")([^"]*)"/\1\2 -fuse-ld=bfd -lmingw32 -lmingwex -lmsvcrt -lkernel32 -luser32 -ladvapi32 -lshell32 -lole32"/g' "${PREFIX}"/ghc-bootstrap/lib/settings
+  perl -i -pe 's/("C compiler link flags", ")([^"]*)"/\1\2 -fuse-ld=bfd -lmingw32 -lmingwex -lgcc_s -lmsvcrt -lkernel32 -luser32 -ladvapi32 -lshell32 -lole32"/g' "${PREFIX}"/ghc-bootstrap/lib/settings
   perl -i -pe 's#("windres command", ")[^"]*"#\1\$topdir/../bin/windres.bat"#g' "${PREFIX}"/ghc-bootstrap/lib/settings
   perl -i -pe 's#-fstack-check##g' "${PREFIX}"/ghc-bootstrap/lib/settings
 
