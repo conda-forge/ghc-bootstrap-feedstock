@@ -1,89 +1,87 @@
 #!/usr/bin/env bash
 set -eu
 
+_log_index=0
+
+run_and_log() {
+  local _logname="$1"
+  shift
+  local cmd=("$@")
+
+  # Create log directory if it doesn't exist
+  mkdir -p "${SRC_DIR}/_logs"
+
+  echo " ";echo "|";echo "|";echo "|";echo "|"
+  echo "Running: ${cmd[*]}"
+  local start_time=$(date +%s)
+  local exit_status_file=$(mktemp)
+  # Run the command in a subshell to prevent set -e from terminating
+  (
+    # Temporarily disable errexit in this subshell
+    set +e
+    "${cmd[@]}" > "${SRC_DIR}/_logs/${_log_index}_${_logname}.log" 2>&1
+    echo $? > "$exit_status_file"
+  ) &
+  local cmd_pid=$!
+  local tail_counter=0
+
+  # Periodically flush and show progress
+  while kill -0 $cmd_pid 2>/dev/null; do
+    sync
+    echo -n "."
+    sleep 5
+    let "tail_counter += 1"
+
+    if [ $tail_counter -ge 22 ]; then
+      echo "."
+      tail -5 "${SRC_DIR}/_logs/${_log_index}_${_logname}.log"
+      tail_counter=0
+    fi
+  done
+
+  wait $cmd_pid || true  # Use || true to prevent set -e from triggering
+  local end_time=$(date +%s)
+  local duration=$((end_time - start_time))
+  local exit_code=$(cat "$exit_status_file")
+  rm "$exit_status_file"
+
+  echo "."
+  echo "─────────────────────────────────────────"
+  printf "Command: %s\n" "${cmd[*]} in ${duration}s"
+  echo "Exit code: $exit_code"
+  echo "─────────────────────────────────────────"
+
+  # Show more context on failure
+  if [[ $exit_code -ne 0 ]]; then
+    echo "COMMAND FAILED - Last 50 lines of log:"
+    tail -50 "${SRC_DIR}/_logs/${_log_index}_${_logname}.log"
+  else
+    echo "COMMAND SUCCEEDED - Last 20 lines of log:"
+    tail -20 "${SRC_DIR}/_logs/${_log_index}_${_logname}.log"
+  fi
+
+  echo "─────────────────────────────────────────"
+  echo "Full log: ${SRC_DIR}/_logs/${_log_index}_${_logname}.log"
+  echo "|";echo "|";echo "|";echo "|"
+
+  let "_log_index += 1"
+  return $exit_code
+}
+
 unset build_alias
 unset host_alias
 
 # Create directories for binaries and logs
 mkdir -p "${PREFIX}"/ghc-bootstrap "${SRC_DIR}"/_logs
 
-# Install bootstrap GHC - Set conda platform moniker (we only download non-unix in separate directory)
+# Install bootstrap GHC - Set conda platform moniker
 if [[ ! -d bootstrap-ghc ]]; then
-  echo "Configuring ..."
-  if [[ "${target_platform}" == "linux-"* ]]; then
-    bash configure \
-      --prefix="${PREFIX}"/ghc-bootstrap \
-      --build="${BUILD}" \
-      --host="${HOST}" \
-      --enable-ghc-toolchain >& "${SRC_DIR}"/_logs/configure.log
-  else
-    bash configure \
-      --prefix="${PREFIX}"/ghc-bootstrap \
-      --enable-ghc-toolchain >& "${SRC_DIR}"/_logs/configure.log
-  fi
-
-  if [[ -f default.target.ghc-toolchain ]]; then
-    cp default.target.ghc-toolchain default.target
-  fi
-  echo "Running make install ..."
-  make install >& "${SRC_DIR}"/_logs/make_install.log
-
-  settings_file="${PREFIX}"/ghc-bootstrap/lib/ghc-"${PKG_VERSION}"/lib/settings
-  perl -i -pe 's#($ENV{BUILD_PREFIX}|$ENV{PREFIX})/bin/##' "${settings_file}"
-  perl -i -pe 's#("C compiler link flags", ")([^"]*)"#\1\2 -L\$topdir/../../../../lib"#g' "${settings_file}"
-
-  if [[ "${target_platform}" == "osx-"* ]]; then
-    perl -i -pe 's#("C compiler link flags", ")([^"]*)"#\1\2 -Wl,-rpath,@loader_path/../lib"#g' "${settings_file}"
-  fi
-
-  ## RPATH to conda's lib last
-  perl -i -pe 's#("C compiler link flags", ")([^"]*)"#\1\2 -Wl,-rpath,\$topdir/../../../../lib"#g' "${settings_file}"
-
-  if [[ "${target_platform}" == "linux-"* ]]; then
-    # We enforce prioritizing the sysroot for self-consistently finding the libraries
-    echo "Patching binaries"
-    find "${PREFIX}"/ghc-bootstrap/lib/ghc-"${PKG_VERSION}"/bin -maxdepth 1 -type f -executable | while read -r binary; do
-      if file "$binary" | grep -q "ELF"; then
-        current_rpath=$(patchelf --print-rpath "$binary" 2>/dev/null || echo "")
-        sysroot_lib64="\$ORIGIN/../../../../x86_64-conda-linux-gnu/sysroot/lib64"
-        sysroot_usr_lib64="\$ORIGIN/../../../../x86_64-conda-linux-gnu/sysroot/usr/lib64"
-        conda_lib="\$ORIGIN/../../../../lib"
-        if [[ -n "$current_rpath" ]]; then
-          new_rpath="${sysroot_lib64}:${sysroot_usr_lib64}:${conda_lib}:${current_rpath}"
-        else
-          new_rpath="${sysroot_lib64}:${sysroot_usr_lib64}:${conda_lib}"
-        fi
-        patchelf --set-rpath "$new_rpath" "$binary" 2>/dev/null && echo -n "."
-      fi
-    done
-    echo " done"
-
-    echo "Patching libraries"
-    find "${PREFIX}"/ghc-bootstrap/lib/ghc-"${PKG_VERSION}"/lib/x86_64-linux-ghc-"${PKG_VERSION}" -maxdepth 1 -type f -executable | while read -r binary; do
-      if file "$binary" | grep -q "ELF"; then
-        current_rpath=$(patchelf --print-rpath "$binary" 2>/dev/null || echo "")
-        sysroot_lib64="\$ORIGIN/../../../../../x86_64-conda-linux-gnu/sysroot/lib64"
-        sysroot_usr_lib64="\$ORIGIN/../../../../../x86_64-conda-linux-gnu/sysroot/usr/lib64"
-        conda_lib="\$ORIGIN/../../../../../lib"
-        if [[ -n "$current_rpath" ]]; then
-          new_rpath="${sysroot_lib64}:${sysroot_usr_lib64}:${conda_lib}:${current_rpath}"
-        else
-          new_rpath="${sysroot_lib64}:${sysroot_usr_lib64}:${conda_lib}"
-        fi
-        patchelf --set-rpath "$new_rpath" "$binary" 2>/dev/null && echo -n "."
-      fi
-    done
-    echo " done"
-  fi
-
-  # Verify sysroot compatibility
-  printf 'import System.Posix.Signals\nmain = installHandler sigTERM Default Nothing >> putStrLn "Signal test"\n' > signal_test.hs
-  "${PREFIX}"/ghc-bootstrap/bin/ghc -v signal_test.hs
-  if ./signal_test; then
-    echo "Signal test passed"
-  else
-    echo "Signal test failed with exit code $?"
-  fi
+  run_and_log "bs-configure" bash configure \
+    --prefix="${PREFIX}"/ghc-bootstrap \
+    --enable-ghc-toolchain
+  cp default.target.ghc-toolchain default.target
+  run_and_log "bs-make-install" make install
+  perl -pi -e 's#($ENV{BUILD_PREFIX}|$ENV{PREFIX})/bin/##' "${PREFIX}"/ghc-bootstrap/lib/ghc-"${PKG_VERSION}"/lib/settings
 
   # Reduce footprint
   rm -rf "${PREFIX}"/ghc-bootstrap/share/doc/ghc-"${PKG_VERSION}"/html
@@ -97,21 +95,16 @@ else
   perl -i -pe 's#\$topdir/../mingw//bin/(llvm-)?##' "${PREFIX}"/ghc-bootstrap/lib/settings
   perl -i -pe 's#-I\$topdir/../mingw//include#-I\$topdir/../../Library/include#g' "${PREFIX}"/ghc-bootstrap/lib/settings
   perl -i -pe 's#-L\$topdir/../mingw//lib#-L\$topdir/../../Library/lib#g' "${PREFIX}"/ghc-bootstrap/lib/settings
-  perl -i -pe 's#-L\$topdir/../mingw//x86_64-w64-mingw32/lib#-L\$topdir/../../Library/bin -L\$topdir/../../Library/x86_64-w64-mingw32/sysroot/usr/lib -Wl,-rpath,\$topdir/../../Library/x86_64-w64-mingw32/sysroot/usr/lib#g' "${PREFIX}"/ghc-bootstrap/lib/settings
+  perl -i -pe 's#-L\$topdir/../mingw//x86_64-w64-mingw32/lib#-L\$topdir/../../Library/bin -L\$topdir/../../Library/x86_64-w64-mingw32/sysroot/usr/lib#g' "${PREFIX}"/ghc-bootstrap/lib/settings
+  perl -i -pe 's#x86_64-unknown-mingw32#x86_64-w64-mingw32#g' "${PREFIX}"/ghc-bootstrap/lib/settings
 
   # Add Windows-specific compiler flags to settings
   perl -i -pe 's/("C compiler command", ")([^"]*)"/\1x86_64-w64-mingw32-gcc.exe"/g' "${PREFIX}"/ghc-bootstrap/lib/settings
   perl -i -pe 's/("C\+\+ compiler command", ")([^"]*)"/\1x86_64-w64-mingw32-g++.exe"/g' "${PREFIX}"/ghc-bootstrap/lib/settings
-
-  # Remove clang compiler options
-  perl -i -pe 's/--rtlib=compiler-rt//g' "${PREFIX}"/ghc-bootstrap/lib/settings
-  perl -i -pe 's/-Qunused-arguments//g' "${PREFIX}"/ghc-bootstrap/lib/settings
-  perl -i -pe 's/--target=([^ ]*)//g' "${PREFIX}"/ghc-bootstrap/lib/settings
-
-  cat "${PREFIX}"/ghc-bootstrap/lib/settings
-
-  # Wrap windres
+  perl -i -pe 's/--rtlib=compiler-rt//g; s/-Qunused-arguments//g' "${PREFIX}"/ghc-bootstrap/lib/settings
   perl -i -pe 's#("windres command", ")[^"]*"#\1\$topdir/../bin/windres.bat"#g' "${PREFIX}"/ghc-bootstrap/lib/settings
+  # perl -i -pe 's#-fstack-check##g' "${PREFIX}"/ghc-bootstrap/lib/settings
+
   cp "${RECIPE_DIR}"/windres.bat "${PREFIX}"/ghc-bootstrap/bin/windres.bat
 
   # Reduce footprint
@@ -127,13 +120,6 @@ else
   echo "Fake mingw directory created at ${PREFIX}/ghc-bootstrap/mingw" | cat >> "${PREFIX}"/ghc-bootstrap/mingw/share/__unused__
 fi
 
-# Clean up package cache
-rm -f "${PREFIX}"/ghc-bootstrap/lib/ghc-"${PKG_VERSION}"/lib/package.conf.d/package.cache
-rm -f "${PREFIX}"/ghc-bootstrap/lib/ghc-"${PKG_VERSION}"/lib/package.conf.d/package.cache.lock
-
-mkdir -p "${PREFIX}/etc/conda/activate.d"
-cp "${RECIPE_DIR}/activate.sh" "${PREFIX}/etc/conda/activate.d/${PKG_NAME}_activate.sh"
-
 # Add package licenses
 mkdir -p "${SRC_DIR}"/license_files
 arch="-${target_platform#*-}"
@@ -142,21 +128,8 @@ arch="${arch#*-}"
 arch="${arch//arm64/aarch64}"
 os=${target_platform%%-*}
 os="${os//win/windows}"
-if [[ "${target_platform}" == "linux-"* ]] || [[ "${target_platform}" == "osx-"* ]]; then
-  share="share"
-else
-  share="lib"
-fi
-license_files_dir=$(find "${PREFIX}"/ghc-bootstrap/"${share}"/doc -name "${arch}-${os}-ghc-${PKG_VERSION}*" -type d | head -n 1)
-
-echo "License files directory: ${license_files_dir}"
-for pkg in $(find "${PREFIX}"/ghc-bootstrap/lib -name '*.conf' -print0 | env -i PATH="$PATH" xargs -0 grep -l '^license:' | sort -u); do
-  echo "Processing package: ${pkg}"
-  pkg_name=$(basename "${pkg}" .conf)
-  pkg_name=${pkg_name%-*}
-  license_file=$(find "${license_files_dir}/${pkg_name}" -name LICENSE | head -n 1)
-  if [[ -f "${license_file}" ]]; then
-    echo "Found license file for ${pkg_name}: ${license_file}"
-    cp "${license_file}" "${SRC_DIR}"/license_files/"${pkg_name}"-LICENSE
-  fi
-done
+pushd "${PREFIX}/ghc-bootstrap/share/doc/${arch}-${os}-ghc-${PKG_VERSION}" || pushd "${PREFIX}/ghc-bootstrap/lib/doc/${arch}-${os}-ghc-${PKG_VERSION}"
+  for file in */LICENSE; do
+    cp "${file///-}" "${SRC_DIR}"/license_files
+  done
+popd
