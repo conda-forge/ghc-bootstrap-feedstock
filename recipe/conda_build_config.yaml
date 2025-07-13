@@ -1,0 +1,21 @@
+c_stdlib:
+  - sysroot                     # [linux]
+  - macosx_deployment_target    # [osx]
+  - m2w64-sysroot               # [not unix]
+c_stdlib_version:
+  - "10.13"                     # [osx]
+  - "2.28"                      # [linux]
+  - "12"                        # [not unix]
+
+c_compiler:
+  - clang                       # [unix]
+  - gcc                         # [not unix]
+c_compiler_version:
+  - 19                          # [unix]
+  - 15                          # [not unix]
+cxx_compiler:
+  - clangxx                     # [unix]
+  - gxx                         # [not unix]
+cxx_compiler_version:
+  - 19                          # [unix]
+  - 15                          # [not unix]

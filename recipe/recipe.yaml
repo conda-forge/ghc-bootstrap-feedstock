@@ -1,0 +1,136 @@
+context:
+  version: "9.12.1"
+
+package:
+  name: ghc-bootstrap
+  version: ${{ version }}
+
+source:
+  - if: osx
+    then:
+      url: https://downloads.haskell.org/~ghc/${{ version }}/ghc-${{ version }}-x86_64-apple-darwin.tar.xz
+      sha256: e6eb460ce2ddd87691c06a0a128adb45b70f339b999dcf845bc1b146f13879f1
+  - if: linux
+    then:
+      url: https://downloads.haskell.org/~ghc/${{ version }}/ghc-${{ version }}-x86_64-ubuntu20_04-linux.tar.xz
+      sha256: d88379492ce2a5c14c0db1f2d7fc980b40cb44e4b7026e347b72efe2224600ec
+  - if: not unix
+    then:
+      url: https://downloads.haskell.org/~ghc/${{ version }}/ghc-${{ version }}-x86_64-unknown-mingw32.tar.xz
+      sha256: 22dc942be1b968d5e28e75c06aba52829d0c52d9234bc9941df9ab2a0e2a610d
+      target_directory: bootstrap-ghc
+
+build:
+  number: 0
+  # We will not need x-compiled ghc-bootstrap
+  skip: aarch64 or arm64
+
+requirements:
+  host:
+    - ${{ compiler('c') }}
+    - ${{ compiler('cxx') }}
+    - ${{ stdlib('c') }}
+    - gmp
+    - libffi
+    - perl
+
+    - if: unix
+      then:
+        - make
+        - patchelf
+      else:
+        - binutils
+        - libgcc
+        - m2-bash
+        - m2-coreutils
+        - m2-diffutils
+        - m2-findutils
+        - m2-grep
+        - m2-tar
+        - m2-which
+  run:
+    - ${{ compiler('c') }}
+    - ${{ stdlib('c') }}
+    - gmp
+    - libffi
+    - if: unix
+      then:
+        - libiconv
+        - ncurses
+      else:
+        - binutils
+
+tests:
+  - package_contents:
+      files:
+        - ghc-bootstrap/bin/ghc-${{ version }}${{ "" if unix else ".exe" }}
+        - ghc-bootstrap/bin/ghc-pkg-${{ version }}${{ "" if unix else ".exe" }}
+        - ghc-bootstrap/bin/ghc-pkg${{ "" if unix else ".exe" }}
+        - ghc-bootstrap/bin/ghc${{ "" if unix else ".exe" }}
+        - ghc-bootstrap/bin/ghci-${{ version }}${{ "" if unix else ".exe" }}
+        - ghc-bootstrap/bin/ghci${{ "" if unix else ".exe" }}
+        - ghc-bootstrap/bin/haddock-ghc-${{ version }}${{ "" if unix else ".exe" }}
+        - ghc-bootstrap/bin/haddock${{ "" if unix else ".exe" }}
+        - ghc-bootstrap/bin/hp2ps-ghc-${{ version }}${{ "" if unix else ".exe" }}
+        - ghc-bootstrap/bin/hp2ps${{ "" if unix else ".exe" }}
+        - ghc-bootstrap/bin/hpc-ghc-${{ version }}${{ "" if unix else ".exe" }}
+        - ghc-bootstrap/bin/hpc${{ "" if unix else ".exe" }}
+        - ghc-bootstrap/bin/hsc2hs-ghc-${{ version }}${{ "" if unix else ".exe" }}
+        - ghc-bootstrap/bin/hsc2hs${{ "" if unix else ".exe" }}
+        - ghc-bootstrap/bin/runghc-${{ version }}${{ "" if unix else ".exe" }}
+        - ghc-bootstrap/bin/runghc${{ "" if unix else ".exe" }}
+        - ghc-bootstrap/bin/runhaskell-${{ version }}${{ "" if unix else ".exe" }}
+        - ghc-bootstrap/bin/runhaskell${{ "" if unix else ".exe" }}
+        - if: unix
+          then:
+            - ghc-bootstrap/lib/ghc-${{ version }}/bin/ghc-toolchain-bin-ghc-${{ version }}${{ "" if unix else ".exe" }}
+            - ghc-bootstrap/lib/ghc-${{ version }}/bin/ghc-toolchain-bin${{ "" if unix else ".exe" }}
+          else:
+            - ghc-bootstrap/bin/ghc-iserv-ghc-${{ version }}.exe
+            - ghc-bootstrap/bin/ghc-iserv-prof-ghc-${{ version }}.exe
+            - ghc-bootstrap/bin/ghc-iserv-prof.exe
+            - ghc-bootstrap/bin/ghc-iserv.exe
+            - ghc-bootstrap/bin/unlit-ghc-${{ version }}.exe
+            - ghc-bootstrap/bin/unlit.exe
+            - ghc-bootstrap/bin/ghcii.sh
+            - ghc-bootstrap/bin/ghcii9.10.1.sh
+
+            - ghc-bootstrap/mingw/bin/__unused__
+            - ghc-bootstrap/mingw/include/__unused__
+            - ghc-bootstrap/mingw/lib/__unused__
+            - ghc-bootstrap/mingw/share/__unused__
+
+
+  - script:
+      - if: unix
+        then: ${PREFIX}/ghc-bootstrap/bin/ghc --version
+        else: CALL %PREFIX%/ghc-bootstrap/bin/ghc.exe --version
+
+  - script:
+      - printf 'main = putStrLn "Hello conda-forge"\n' > hello.hs
+      - if: osx
+        then: ${PREFIX}/ghc-bootstrap/bin/ghc -v -L${CONDA_PREFIX}/lib -optl-Wl,-rpath,${CONDA_PREFIX}/lib hello.hs
+      - if: linux
+        then: ${PREFIX}/ghc-bootstrap/bin/ghc -v -L${CONDA_PREFIX}/lib hello.hs
+      - if: not unix
+        then: |
+          echo main = putStrLn "Hello conda-forge" > hello.hs
+          CALL %PREFIX%\ghc-bootstrap\bin\ghc.exe hello.hs
+      - if: unix
+        then: ./hello
+        else: hello.exe
+
+about:
+  homepage: https://haskell.org/ghc/
+  license: BSD-3-Clause
+  license_file: license_files/
+  summary: Glorious Glasgow Haskell Compilation System
+  description: |
+    GHC is a state-of-the-art, open source, compiler and interactive environment 
+    for the functional language Haskell.
+  documentation: https://www.haskell.org/ghc/documentation.html
+  repository: https://gitlab.haskell.org/ghc/ghc
+
+extra:
+  recipe-maintainers:
+    - eggzilla
