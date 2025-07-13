@@ -1,9 +1,15 @@
-compiler_stack: comp7
-max_py_ver: '37'
-max_r_ver: '35'
-conda_forge_output_validation: true
+conda_build_tool: rattler-build
 github:
   branch_name: main
   tooling_branch_name: main
 conda_build:
-  pkg_format: '2'
+  error_overlinking: true
+conda_forge_output_validation: true
+test: native_and_emulated
+azure:
+    # toggle for freeing up some extra space on the default Azure Pipelines
+    # linux image before running the Docker container for building
+    free_disk_space: true
+    settings_win:
+        variables:
+            CONDA_BLD_PATH: "C:\\bld"
