@@ -75,14 +75,8 @@ else
 fi
 license_files_dir=$(find "${PREFIX}"/ghc-bootstrap/"${share}"/doc -name "${arch}-${os}-ghc-${PKG_VERSION}-*" -type d | head -n 1)
 
-echo "ghc-bootstrap/lib"
-ls "${PREFIX}"/ghc-bootstrap/lib/
-echo "---"
-ls "${PREFIX}"/ghc-bootstrap/lib/*
-
-# for pkg in $(find "${PREFIX}"/ghc-bootstrap/lib/ghc-"${PKG_VERSION}" -name '*.conf' -exec grep -l '^license:' {} \; | sort -u); do
 echo "License files directory: ${license_files_dir}"
-for pkg in $(find "${PREFIX}"/ghc-bootstrap/lib/ghc-"${PKG_VERSION}" -name '*.conf' -print0 | env -i PATH="$PATH" xargs -0 grep -l '^license:' | sort -u); do
+for pkg in $(find "${PREFIX}"/ghc-bootstrap/lib -name '*.conf' -print0 | env -i PATH="$PATH" xargs -0 grep -l '^license:' | sort -u); do
   echo "Processing package: ${pkg}"
   pkg_name=$(basename "${pkg}" .conf)
   pkg_name=${pkg_name%-*}
