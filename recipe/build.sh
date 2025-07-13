@@ -34,10 +34,16 @@ else
   # Add Windows-specific compiler flags to settings
   perl -i -pe 's/("C compiler command", ")([^"]*)"/\1x86_64-w64-mingw32-gcc.exe"/g' "${PREFIX}"/ghc-bootstrap/lib/settings
   perl -i -pe 's/("C\+\+ compiler command", ")([^"]*)"/\1x86_64-w64-mingw32-g++.exe"/g' "${PREFIX}"/ghc-bootstrap/lib/settings
-  perl -i -pe 's/--rtlib=compiler-rt//g; s/-Qunused-arguments//g' "${PREFIX}"/ghc-bootstrap/lib/settings
-  perl -i -pe 's#("windres command", ")[^"]*"#\1\$topdir/../bin/windres.bat"#g' "${PREFIX}"/ghc-bootstrap/lib/settings
-  # perl -i -pe 's#-fstack-check##g' "${PREFIX}"/ghc-bootstrap/lib/settings
+  
+  # Remove clang compiler options
+  perl -i -pe 's/--rtlib=compiler-rt//g' "${PREFIX}"/ghc-bootstrap/lib/settings
+  perl -i -pe 's/-Qunused-arguments//g' "${PREFIX}"/ghc-bootstrap/lib/settings
+  perl -i -pe 's/--target=x86_64-unknown-windows-gnu//g' "${PREFIX}"/ghc-bootstrap/lib/settings
 
+  cat "${PREFIX}"/ghc-bootstrap/lib/settings
+  
+  # Wrap windres
+  perl -i -pe 's#("windres command", ")[^"]*"#\1\$topdir/../bin/windres.bat"#g' "${PREFIX}"/ghc-bootstrap/lib/settings
   cp "${RECIPE_DIR}"/windres.bat "${PREFIX}"/ghc-bootstrap/bin/windres.bat
 
   # Reduce footprint
