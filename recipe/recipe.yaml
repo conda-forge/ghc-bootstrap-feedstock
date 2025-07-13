@@ -93,7 +93,7 @@ tests:
             - ghc-bootstrap/bin/unlit-ghc-${{ version }}.exe
             - ghc-bootstrap/bin/unlit.exe
             - ghc-bootstrap/bin/ghcii.sh
-            - ghc-bootstrap/bin/ghcii9.10.1.sh
+            - ghc-bootstrap/bin/ghcii${{ version }}.sh
 
             - ghc-bootstrap/mingw/bin/__unused__
             - ghc-bootstrap/mingw/include/__unused__
