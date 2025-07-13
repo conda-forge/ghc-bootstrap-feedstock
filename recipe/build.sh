@@ -128,8 +128,15 @@ arch="${arch#*-}"
 arch="${arch//arm64/aarch64}"
 os=${target_platform%%-*}
 os="${os//win/windows}"
-pushd "${PREFIX}/ghc-bootstrap/share/doc/${arch}-${os}-ghc-${PKG_VERSION}-*" || pushd "${PREFIX}/ghc-bootstrap/lib/doc/${arch}-${os}-ghc-${PKG_VERSION}"-* || exit 1
-  for file in */LICENSE; do
-    cp "${file///-}" "${SRC_DIR}"/license_files
-  done
-popd
+license_files_dir=$(find "${PREFIX}"/ghc-bootstrap/share/doc -name "${arch}-${os}-ghc-${PKG_VERSION}-*" -type d | head -n 1)
+echo "License files directory: ${license_files_dir}"
+for pkg in $(find "${PREFIX}"/ghc-bootstrap/lib/ghc-"${PKG_VERSION}" -name '*.conf' -exec grep -l '^license:' {} \; | sort -u); do
+  echo "Processing package: ${pkg}"
+  pkg_name=$(basename "${pkg}" .conf)
+  pkg_name=${pkg_name%-*}
+  license_file=$(find "${license_files_dir}/${pkg_name}" -name LICENSE | head -n 1)
+  if [[ -f "${license_file}" ]]; then
+    echo "Found license file for ${pkg_name}: ${license_file}"
+    cp "${license_file}" "${SRC_DIR}"/license_files/"${pkg_name}"-LICENSE
+  fi
+done
