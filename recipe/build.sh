@@ -68,7 +68,7 @@ arch="${arch#*-}"
 arch="${arch//arm64/aarch64}"
 os=${target_platform%%-*}
 os="${os//win/windows}"
-if [[ "${target_platform}" == "linux-*" ]] || [[ "${target_platform}" == "osx-*" ]]; then
+if [[ "${target_platform}" == "linux-"* ]] || [[ "${target_platform}" == "osx-"* ]]; then
   share="share"
 else
   share="lib"
