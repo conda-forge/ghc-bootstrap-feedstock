@@ -9,12 +9,21 @@ mkdir -p "${PREFIX}"/ghc-bootstrap "${SRC_DIR}"/_logs
 
 # Install bootstrap GHC - Set conda platform moniker (we only download non-unix in separate directory)
 if [[ ! -d bootstrap-ghc ]]; then
+  if [[ "${target_platform}" == "linux-"* ]]; then
   bash configure \
     --prefix="${PREFIX}"/ghc-bootstrap \
     --build="${BUILD}" \
     --host="${HOST}" \
     --enable-ghc-toolchain
-  cp default.target.ghc-toolchain default.target
+  else
+    bash configure \
+      --prefix="${PREFIX}"/ghc-bootstrap \
+      --enable-ghc-toolchain
+  fi
+  
+  if [[ -f default.target.ghc-toolchain ]]; then
+    cp default.target.ghc-toolchain default.target
+  fi
   make install
 
   settings_file="${PREFIX}"/ghc-bootstrap/lib/ghc-"${PKG_VERSION}"/lib/settings

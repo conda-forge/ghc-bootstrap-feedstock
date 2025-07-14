@@ -110,7 +110,7 @@ tests:
       - printf 'main = putStrLn "Hello conda-forge"\n' > hello.hs
       - if: unix
         then: |
-          ${PREFIX}/ghc-bootstrap/bin/ghc -v hello.hs
+          ${PREFIX}/ghc-bootstrap/bin/ghc hello.hs
           ./hello
         else: |
           echo main = putStrLn "Hello conda-forge" > hello.hs
