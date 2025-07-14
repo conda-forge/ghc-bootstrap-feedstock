@@ -11,6 +11,8 @@ mkdir -p "${PREFIX}"/ghc-bootstrap "${SRC_DIR}"/_logs
 if [[ ! -d bootstrap-ghc ]]; then
   bash configure \
     --prefix="${PREFIX}"/ghc-bootstrap \
+    --build="${BUILD}" \
+    --host="${HOST}" \
     --enable-ghc-toolchain
   cp default.target.ghc-toolchain default.target
   make install
@@ -18,21 +20,22 @@ if [[ ! -d bootstrap-ghc ]]; then
   settings_file="${PREFIX}"/ghc-bootstrap/lib/ghc-"${PKG_VERSION}"/lib/settings
   perl -i -pe 's#($ENV{BUILD_PREFIX}|$ENV{PREFIX})/bin/##' "${settings_file}"
   perl -i -pe 's#("C compiler link flags", ")([^"]*)"#\1\2 -L\$topdir/../../../../lib"#g' "${settings_file}"
-  perl -i -pe 's#("C compiler link flags", ")([^"]*)"#\1\2 -Wl,-rpath,\$topdir/../../../../lib"#g' "${settings_file}"
 
   if [[ "${target_platform}" == "linux-"* ]]; then
-    perl -i -pe 's#("C compiler command", ")([^"]*)"#\1\2 --sysroot=\$topdir/../../../../x86_64-conda-linux-gnu/sysroot"#g' "${settings_file}"
-    perl -i -pe 's#("C\+\+ compiler command", ")([^"]*)"#\1\2 --sysroot=\$topdir/../../../../x86_64-conda-linux-gnu/sysroot"#g' "${settings_file}"
+    perl -i -pe 's#("C compiler flags", ")([^"]*)"#\1\2 --sysroot=\$topdir/../../../../x86_64-conda-linux-gnu/sysroot"#g' "${settings_file}"
+    perl -i -pe 's#("C\+\+ compiler flags", ")([^"]*)"#\1\2 --sysroot=\$topdir/../../../../x86_64-conda-linux-gnu/sysroot"#g' "${settings_file}"
     perl -i -pe 's#("C compiler link flags", ")([^"]*)"#\1\2 --sysroot=\$topdir/../../../../x86_64-conda-linux-gnu/sysroot"#g' "${settings_file}"
+
     perl -i -pe 's#("C compiler link flags", ")([^"]*)"#\1\2 -L\$topdir/../../../../x86_64-conda-linux-gnu/sysroot/lib64"#g' "${settings_file}"
     perl -i -pe 's#("C compiler link flags", ")([^"]*)"#\1\2 -L\$topdir/../../../../x86_64-conda-linux-gnu/sysroot/usr/lib64"#g' "${settings_file}"
-    perl -i -pe 's#("C compiler link flags", ")([^"]*)"#\1\2 -Wl,-rpath,\$topdir/../../../../x86_64-conda-linux-gnu/sysroot/lib64"#g' "${settings_file}"
-    perl -i -pe 's#("C compiler link flags", ")([^"]*)"#\1\2 -Wl,-rpath,\$topdir/../../../../x86_64-conda-linux-gnu/sysroot/usr/lib64"#g' "${settings_file}"
   fi
   
   if [[ "${target_platform}" == "osx-"* ]]; then
     perl -i -pe 's#("C compiler link flags", ")([^"]*)"#\1\2 -Wl,-rpath,@loader_path/../lib"#g' "${settings_file}"
   fi
+  
+  # RPATH to conda's lib last
+  perl -i -pe 's#("C compiler link flags", ")([^"]*)"#\1\2 -Wl,-rpath,\$topdir/../../../../lib"#g' "${settings_file}"
   
   # Reduce footprint
   rm -rf "${PREFIX}"/ghc-bootstrap/share/doc/ghc-"${PKG_VERSION}"/html
@@ -47,7 +50,7 @@ else
   perl -i -pe 's#-I\$topdir/../mingw//include#-I\$topdir/../../Library/include#g' "${PREFIX}"/ghc-bootstrap/lib/settings
   perl -i -pe 's#-L\$topdir/../mingw//lib#-L\$topdir/../../Library/lib#g' "${PREFIX}"/ghc-bootstrap/lib/settings
   perl -i -pe 's#-L\$topdir/../mingw//x86_64-w64-mingw32/lib#-L\$topdir/../../Library/bin -L\$topdir/../../Library/x86_64-w64-mingw32/sysroot/usr/lib -Wl,-rpath,\$topdir/../../Library/x86_64-w64-mingw32/sysroot/usr/lib#g' "${PREFIX}"/ghc-bootstrap/lib/settings
-  perl -i -pe 's#x86_64-unknown-mingw32#x86_64-w64-mingw32#g' "${PREFIX}"/ghc-bootstrap/lib/settings
+  perl -i -pe 's#(x86_64-unknown-mingw32|x86_64-unknown-windows-gnu)#x86_64-w64-mingw32#g' "${PREFIX}"/ghc-bootstrap/lib/settings
 
   # Add Windows-specific compiler flags to settings
   perl -i -pe 's/("C compiler command", ")([^"]*)"/\1x86_64-w64-mingw32-gcc.exe"/g' "${PREFIX}"/ghc-bootstrap/lib/settings
@@ -56,7 +59,7 @@ else
   # Remove clang compiler options
   perl -i -pe 's/--rtlib=compiler-rt//g' "${PREFIX}"/ghc-bootstrap/lib/settings
   perl -i -pe 's/-Qunused-arguments//g' "${PREFIX}"/ghc-bootstrap/lib/settings
-  perl -i -pe 's/--target=x86_64-unknown-windows-gnu//g' "${PREFIX}"/ghc-bootstrap/lib/settings
+  # perl -i -pe 's/--target=x86_64-unknown-windows-gnu//g' "${PREFIX}"/ghc-bootstrap/lib/settings
 
   cat "${PREFIX}"/ghc-bootstrap/lib/settings
   
