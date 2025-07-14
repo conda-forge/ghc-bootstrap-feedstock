@@ -59,7 +59,6 @@ else
   perl -i -pe 's#-I\$topdir/../mingw//include#-I\$topdir/../../Library/include#g' "${PREFIX}"/ghc-bootstrap/lib/settings
   perl -i -pe 's#-L\$topdir/../mingw//lib#-L\$topdir/../../Library/lib#g' "${PREFIX}"/ghc-bootstrap/lib/settings
   perl -i -pe 's#-L\$topdir/../mingw//x86_64-w64-mingw32/lib#-L\$topdir/../../Library/bin -L\$topdir/../../Library/x86_64-w64-mingw32/sysroot/usr/lib -Wl,-rpath,\$topdir/../../Library/x86_64-w64-mingw32/sysroot/usr/lib#g' "${PREFIX}"/ghc-bootstrap/lib/settings
-  perl -i -pe 's#(x86_64-unknown-mingw32|x86_64-unknown-windows-gnu)#x86_64-w64-mingw32#g' "${PREFIX}"/ghc-bootstrap/lib/settings
 
   # Add Windows-specific compiler flags to settings
   perl -i -pe 's/("C compiler command", ")([^"]*)"/\1x86_64-w64-mingw32-gcc.exe"/g' "${PREFIX}"/ghc-bootstrap/lib/settings
@@ -68,7 +67,7 @@ else
   # Remove clang compiler options
   perl -i -pe 's/--rtlib=compiler-rt//g' "${PREFIX}"/ghc-bootstrap/lib/settings
   perl -i -pe 's/-Qunused-arguments//g' "${PREFIX}"/ghc-bootstrap/lib/settings
-  # perl -i -pe 's/--target=x86_64-unknown-windows-gnu//g' "${PREFIX}"/ghc-bootstrap/lib/settings
+  perl -i -pe 's/--target=([^ ]*)//g' "${PREFIX}"/ghc-bootstrap/lib/settings
 
   cat "${PREFIX}"/ghc-bootstrap/lib/settings
   
