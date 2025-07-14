@@ -10,11 +10,11 @@ mkdir -p "${PREFIX}"/ghc-bootstrap "${SRC_DIR}"/_logs
 # Install bootstrap GHC - Set conda platform moniker (we only download non-unix in separate directory)
 if [[ ! -d bootstrap-ghc ]]; then
   if [[ "${target_platform}" == "linux-"* ]]; then
-  bash configure \
-    --prefix="${PREFIX}"/ghc-bootstrap \
-    --build="${BUILD}" \
-    --host="${HOST}" \
-    --enable-ghc-toolchain
+    bash configure \
+      --prefix="${PREFIX}"/ghc-bootstrap \
+      --build="${BUILD}" \
+      --host="${HOST}" \
+      --enable-ghc-toolchain
   else
     bash configure \
       --prefix="${PREFIX}"/ghc-bootstrap \
