@@ -30,22 +30,37 @@ if [[ ! -d bootstrap-ghc ]]; then
   perl -i -pe 's#($ENV{BUILD_PREFIX}|$ENV{PREFIX})/bin/##' "${settings_file}"
   perl -i -pe 's#("C compiler link flags", ")([^"]*)"#\1\2 -L\$topdir/../../../../lib"#g' "${settings_file}"
 
-  if [[ "${target_platform}" == "linux-"* ]]; then
-    perl -i -pe 's#("C compiler flags", ")([^"]*)"#\1\2 --sysroot=\$topdir/../../../../x86_64-conda-linux-gnu/sysroot"#g' "${settings_file}"
-    perl -i -pe 's#("C\+\+ compiler flags", ")([^"]*)"#\1\2 --sysroot=\$topdir/../../../../x86_64-conda-linux-gnu/sysroot"#g' "${settings_file}"
-    perl -i -pe 's#("C compiler link flags", ")([^"]*)"#\1\2 --sysroot=\$topdir/../../../../x86_64-conda-linux-gnu/sysroot"#g' "${settings_file}"
-
-    perl -i -pe 's#("C compiler link flags", ")([^"]*)"#\1\2 -L\$topdir/../../../../x86_64-conda-linux-gnu/sysroot/lib64"#g' "${settings_file}"
-    perl -i -pe 's#("C compiler link flags", ")([^"]*)"#\1\2 -L\$topdir/../../../../x86_64-conda-linux-gnu/sysroot/usr/lib64"#g' "${settings_file}"
-  fi
-  
   if [[ "${target_platform}" == "osx-"* ]]; then
     perl -i -pe 's#("C compiler link flags", ")([^"]*)"#\1\2 -Wl,-rpath,@loader_path/../lib"#g' "${settings_file}"
   fi
   
-  # RPATH to conda's lib last
+  ## RPATH to conda's lib last
   perl -i -pe 's#("C compiler link flags", ")([^"]*)"#\1\2 -Wl,-rpath,\$topdir/../../../../lib"#g' "${settings_file}"
   
+  if [[ "${target_platform}" == "linux-"* ]]; then
+    # We enforce prioritizing the sysroot for full sysroot complianc
+    find ${PREFIX}/ghc-bootstrap/lib/ghc-"${PKG_VERSION}" -type f -executable | while read -r binary; do
+      if file "$binary" | grep -q "ELF"; then
+        echo "Patching binary: $binary"
+        current_rpath=$(patchelf --print-rpath "$binary" 2>/dev/null || echo "")
+        sysroot_lib64="\$ORIGIN/../../../../x86_64-conda-linux-gnu/sysroot/lib64"
+        sysroot_usr_lib64="\$ORIGIN/../../../../x86_64-conda-linux-gnu/sysroot/usr/lib64"
+        conda_lib="\$ORIGIN/../../../../lib"
+        if [[ -n "$current_rpath" ]]; then
+          new_rpath="${sysroot_lib64}:${sysroot_usr_lib64}:${conda_lib}:${current_rpath}"
+        else
+          new_rpath="${sysroot_lib64}:${sysroot_usr_lib64}:${conda_lib}"
+        fi
+        patchelf --set-rpath "$new_rpath" "$binary" 2>/dev/null && echo "Updated rpath for $binary"
+      fi
+    done
+        
+  fi
+  
+  # Verify sysroot compatibility
+  printf 'import System.Posix.Signals\nmain = installHandler sigTERM Default Nothing >> putStrLn "Signal test"\n' > signal_test.hs
+  ${PREFIX}/ghc-bootstrap/bin/ghc -v signal_test.hs && ./signal_test
+
   # Reduce footprint
   rm -rf "${PREFIX}"/ghc-bootstrap/share/doc/ghc-"${PKG_VERSION}"/html
   find "${PREFIX}"/ghc-bootstrap/lib/ghc-"${PKG_VERSION}" -name '*_p.a' -delete

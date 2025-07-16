@@ -36,11 +36,13 @@ requirements:
 
     - if: unix
       then:
+        - file
         - make
+        - ncurses
         - patchelf
+        - pkg-config
       else:
         - binutils
-        - libgcc
         - m2-bash
         - m2-coreutils
         - m2-diffutils
@@ -49,20 +51,17 @@ requirements:
         - m2-tar
         - m2-which
   run:
-    - ${{ compiler('c') }}
-    - ${{ stdlib('c') }}
-    - gmp
-    - libffi
     - if: unix
-      then:
-        - libiconv
-        - ncurses
-      else:
-        - binutils
+      then: ${{ stdlib('c') }}
+    - if: not unix
+      then: ld_impl_win-64 >=2.43
+
 
 tests:
   - package_contents:
       files:
+        - ghc-bootstrap/lib/ghc-${{ version }}/lib/settings
+
         - ghc-bootstrap/bin/ghc-${{ version }}${{ "" if unix else ".exe" }}
         - ghc-bootstrap/bin/ghc-pkg-${{ version }}${{ "" if unix else ".exe" }}
         - ghc-bootstrap/bin/ghc-pkg${{ "" if unix else ".exe" }}
@@ -81,6 +80,9 @@ tests:
         - ghc-bootstrap/bin/runghc${{ "" if unix else ".exe" }}
         - ghc-bootstrap/bin/runhaskell-${{ version }}${{ "" if unix else ".exe" }}
         - ghc-bootstrap/bin/runhaskell${{ "" if unix else ".exe" }}
+        
+        - ghc-bootstrap/lib/ghc-${{ version }}/lib/package.conf.d/**
+        
         - if: unix
           then:
             - ghc-bootstrap/lib/ghc-${{ version }}/bin/ghc-toolchain-bin-ghc-${{ version }}${{ "" if unix else ".exe" }}
@@ -100,22 +102,36 @@ tests:
             - ghc-bootstrap/mingw/lib/__unused__
             - ghc-bootstrap/mingw/share/__unused__
 
-
   - script:
       - if: unix
         then: ${PREFIX}/ghc-bootstrap/bin/ghc --version
         else: CALL %PREFIX%/ghc-bootstrap/bin/ghc.exe --version
-
-  - script:
       - printf 'main = putStrLn "Hello conda-forge"\n' > hello.hs
       - if: unix
         then: |
-          ${PREFIX}/ghc-bootstrap/bin/ghc hello.hs
+          ${PREFIX}/ghc-bootstrap/bin/ghc -v hello.hs
+          ldd hello
           ./hello
         else: |
           echo main = putStrLn "Hello conda-forge" > hello.hs
           CALL %PREFIX%\ghc-bootstrap\bin\ghc.exe hello.hs
           hello.exe
+    requirements:
+      run:
+        - ${{ compiler('c') }}
+
+  - script:
+      - printf 'import System.Posix.Signals\nmain = installHandler sigTERM Default Nothing >> putStrLn "Signal test"\n' > signal_test.hs
+      - if: unix
+        then: |
+          ${PREFIX}/ghc-bootstrap/bin/ghc -v signal_test.hs
+          ldd signal_test
+          ./signal_test
+        else: |
+          echo Skipping signal test on Windows
+    requirements:
+      run:
+        - ${{ compiler('c') }}
 
 about:
   homepage: https://haskell.org/ghc/
