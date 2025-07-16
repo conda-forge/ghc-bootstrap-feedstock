@@ -9,22 +9,24 @@ mkdir -p "${PREFIX}"/ghc-bootstrap "${SRC_DIR}"/_logs
 
 # Install bootstrap GHC - Set conda platform moniker (we only download non-unix in separate directory)
 if [[ ! -d bootstrap-ghc ]]; then
+  echo "Configuring ..."
   if [[ "${target_platform}" == "linux-"* ]]; then
     bash configure \
       --prefix="${PREFIX}"/ghc-bootstrap \
       --build="${BUILD}" \
       --host="${HOST}" \
-      --enable-ghc-toolchain
+      --enable-ghc-toolchain >& "${SRC_DIR}"/_logs/configure.log
   else
     bash configure \
       --prefix="${PREFIX}"/ghc-bootstrap \
-      --enable-ghc-toolchain
+      --enable-ghc-toolchain >& "${SRC_DIR}"/_logs/configure.log
   fi
 
   if [[ -f default.target.ghc-toolchain ]]; then
     cp default.target.ghc-toolchain default.target
   fi
-  make install
+  echo "Running make install ..."
+  make install >& "${SRC_DIR}"/_logs/make_install.log
 
   settings_file="${PREFIX}"/ghc-bootstrap/lib/ghc-"${PKG_VERSION}"/lib/settings
   perl -i -pe 's#($ENV{BUILD_PREFIX}|$ENV{PREFIX})/bin/##' "${settings_file}"
@@ -38,10 +40,10 @@ if [[ ! -d bootstrap-ghc ]]; then
   perl -i -pe 's#("C compiler link flags", ")([^"]*)"#\1\2 -Wl,-rpath,\$topdir/../../../../lib"#g' "${settings_file}"
 
   if [[ "${target_platform}" == "linux-"* ]]; then
-    # We enforce prioritizing the sysroot for full sysroot complianc
-    find ${PREFIX}/ghc-bootstrap/lib/ghc-"${PKG_VERSION}" -type f -executable | while read -r binary; do
+    # We enforce prioritizing the sysroot for self-consistently finding the libraries
+    echo "Patching binaries"
+    find "${PREFIX}"/ghc-bootstrap/lib/ghc-"${PKG_VERSION}"/bin -maxdepth 1 -type f -executable | while read -r binary; do
       if file "$binary" | grep -q "ELF"; then
-        echo "Patching binary: $binary"
         current_rpath=$(patchelf --print-rpath "$binary" 2>/dev/null || echo "")
         sysroot_lib64="\$ORIGIN/../../../../x86_64-conda-linux-gnu/sysroot/lib64"
         sysroot_usr_lib64="\$ORIGIN/../../../../x86_64-conda-linux-gnu/sysroot/usr/lib64"
@@ -51,15 +53,37 @@ if [[ ! -d bootstrap-ghc ]]; then
         else
           new_rpath="${sysroot_lib64}:${sysroot_usr_lib64}:${conda_lib}"
         fi
-        patchelf --set-rpath "$new_rpath" "$binary" 2>/dev/null && echo "Updated rpath for $binary"
+        patchelf --set-rpath "$new_rpath" "$binary" 2>/dev/null && echo -n "."
       fi
     done
+    echo " done"
 
+    echo "Patching libraries"
+    find "${PREFIX}"/ghc-bootstrap/lib/ghc-"${PKG_VERSION}"/lib/x86_64-linux-ghc-"${PKG_VERSION}" -maxdepth 1 -type f -executable | while read -r binary; do
+      if file "$binary" | grep -q "ELF"; then
+        current_rpath=$(patchelf --print-rpath "$binary" 2>/dev/null || echo "")
+        sysroot_lib64="\$ORIGIN/../../../../../x86_64-conda-linux-gnu/sysroot/lib64"
+        sysroot_usr_lib64="\$ORIGIN/../../../../../x86_64-conda-linux-gnu/sysroot/usr/lib64"
+        conda_lib="\$ORIGIN/../../../../../lib"
+        if [[ -n "$current_rpath" ]]; then
+          new_rpath="${sysroot_lib64}:${sysroot_usr_lib64}:${conda_lib}:${current_rpath}"
+        else
+          new_rpath="${sysroot_lib64}:${sysroot_usr_lib64}:${conda_lib}"
+        fi
+        patchelf --set-rpath "$new_rpath" "$binary" 2>/dev/null && echo -n "."
+      fi
+    done
+    echo " done"
   fi
 
   # Verify sysroot compatibility
   printf 'import System.Posix.Signals\nmain = installHandler sigTERM Default Nothing >> putStrLn "Signal test"\n' > signal_test.hs
-  ${PREFIX}/ghc-bootstrap/bin/ghc -v signal_test.hs && ./signal_test
+  "${PREFIX}"/ghc-bootstrap/bin/ghc -v signal_test.hs
+  if ./signal_test; then
+    echo "Signal test passed"
+  else
+    echo "Signal test failed with exit code $?"
+  fi
 
   # Reduce footprint
   rm -rf "${PREFIX}"/ghc-bootstrap/share/doc/ghc-"${PKG_VERSION}"/html
@@ -123,7 +147,7 @@ if [[ "${target_platform}" == "linux-"* ]] || [[ "${target_platform}" == "osx-"*
 else
   share="lib"
 fi
-license_files_dir=$(find "${PREFIX}"/ghc-bootstrap/"${share}"/doc -name "${arch}-${os}-ghc-${PKG_VERSION}-*" -type d | head -n 1)
+license_files_dir=$(find "${PREFIX}"/ghc-bootstrap/"${share}"/doc -name "${arch}-${os}-ghc-${PKG_VERSION}*" -type d | head -n 1)
 
 echo "License files directory: ${license_files_dir}"
 for pkg in $(find "${PREFIX}"/ghc-bootstrap/lib -name '*.conf' -print0 | env -i PATH="$PATH" xargs -0 grep -l '^license:' | sort -u); do

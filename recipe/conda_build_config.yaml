@@ -2,7 +2,7 @@ c_stdlib:
   - sysroot                     # [linux]
   - m2w64-sysroot               # [not unix]
 c_stdlib_version:
-  - 2.28                        # [linux]
+  - 2.34                        # [linux]
   - 12                          # [not unix]
 
 c_compiler:
