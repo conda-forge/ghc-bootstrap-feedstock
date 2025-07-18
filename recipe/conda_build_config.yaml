@@ -1,7 +1,7 @@
-c_stdlib:
+c_stdlib:                       # [not osx]
   - sysroot                     # [linux]
   - m2w64-sysroot               # [not unix]
-c_stdlib_version:
+c_stdlib_version:               # [not osx]
   - 2.34                        # [linux]
   - 12                          # [not unix]
 

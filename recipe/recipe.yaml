@@ -77,7 +77,6 @@ tests:
         - ghc-bootstrap/bin/runghc${{ "" if unix else ".exe" }}
         - ghc-bootstrap/bin/runhaskell-${{ version }}${{ "" if unix else ".exe" }}
         - ghc-bootstrap/bin/runhaskell${{ "" if unix else ".exe" }}
-
         - if: unix
           then:
             - ghc-bootstrap/lib/ghc-${{ version }}/bin/ghc-toolchain-bin-ghc-${{ version }}${{ "" if unix else ".exe" }}
@@ -144,4 +143,5 @@ about:
 
 extra:
   recipe-maintainers:
+    - MementoRC
     - eggzilla
