@@ -16,6 +16,14 @@ Documentation: https://www.haskell.org/ghc/documentation.html
 GHC is a state-of-the-art, open source, compiler and interactive environment 
 for the functional language Haskell.
 
+Conda-Forge Requirements:
+- Linux: glibc >= 2.34, clang compiler
+- macOS: macOS >= 11.0, clang compiler
+- Windows: MSYS2/MinGW toolchain, binutils
+Note: Windows builds may show overlinking warnings for system DLLs
+(SHLWAPI.dll, WSOCK32.dll, WINMM.dll). These are benign and don't
+affect functionality.
+
 Current build status
 ====================
 
