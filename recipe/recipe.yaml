@@ -51,18 +51,15 @@ requirements:
         - m2-tar
         - m2-which
   host:
-    # - ${{ compiler('c') }}
-    # - ${{ stdlib('c') }}
-    - gmp
-
-    - if: unix
+    - ${{ stdlib('c') }}
+    - if: linux
       then:
+        - gmp
         - ncurses
-      else:
-        - binutils
+    - if: not unix
+      then: binutils
   run:
-    - if: unix
-      then: ${{ stdlib('c') }}
+    - ${{ c_compiler }}_${{ target_platform }}
     - if: not unix
       then: ld_impl_win-64 >=2.43
 
@@ -129,7 +126,7 @@ tests:
       - printf 'main = putStrLn "Hello conda-forge"\n' > hello.hs
       - if: unix
         then: |
-          ${PREFIX}/ghc-bootstrap/bin/ghc -v hello.hs
+          ${PREFIX}/ghc-bootstrap/bin/ghc hello.hs
           ./hello
         else: |
           echo main = putStrLn "Hello conda-forge" > hello.hs
@@ -143,7 +140,7 @@ tests:
       - printf 'import System.Posix.Signals\nmain = installHandler sigTERM Default Nothing >> putStrLn "Signal test"\n' > signal_test.hs
       - if: unix
         then: |
-          ${PREFIX}/ghc-bootstrap/bin/ghc -v signal_test.hs
+          ${PREFIX}/ghc-bootstrap/bin/ghc signal_test.hs
           ./signal_test
         else: |
           echo Skipping signal test on Windows
