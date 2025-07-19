@@ -119,6 +119,11 @@ tests:
         else:
           - CALL %PREFIX%/ghc-bootstrap/bin/ghc.exe --version
           - CALL %PREFIX%/ghc-bootstrap/bin/windres.bat --help
+    requirements:
+      run:
+        - ${{ compiler('c') }}
+        - if: not unix
+          then: binutils
 
   - script:
       - printf 'main = putStrLn "Hello conda-forge"\n' > hello.hs
