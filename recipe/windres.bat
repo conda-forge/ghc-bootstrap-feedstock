@@ -6,7 +6,7 @@ REM Based on CC variable or by searching for available compilers
 
 echo Windres wrapper - detecting C compiler...
 
-set WINDRES_CMD=%PREFIX%\Library\x86_64-w64-mingw32\bin\windres.exe
+set WINDRES_CMD=%CONDA_PREFIX%\Library\x86_64-w64-mingw32\bin\windres.exe
 set PREPROCESSOR_CMD=
 set PREPROCESSOR_ARGS=
 
