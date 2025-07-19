@@ -102,6 +102,7 @@ else
   # Add Windows-specific compiler flags to settings
   perl -i -pe 's/("C compiler command", ")([^"]*)"/\1x86_64-w64-mingw32-gcc.exe"/g' "${PREFIX}"/ghc-bootstrap/lib/settings
   perl -i -pe 's/("C\+\+ compiler command", ")([^"]*)"/\1x86_64-w64-mingw32-g++.exe"/g' "${PREFIX}"/ghc-bootstrap/lib/settings
+  perl -i -pe 's/("ar command", ")([^"]*)"/\1x86_64-w64-mingw32-ar.exe"/g' "${BUILD_PREFIX}"/ghc-bootstrap/lib/settings
   perl -i -pe 's/("ar flags", ")([^"]*)"/\1qc"/g' "${PREFIX}"/ghc-bootstrap/lib/settings
   perl -i -pe 's/("ar supports -L", ")([^"]*)"/\1NO"/g' "${PREFIX}"/ghc-bootstrap/lib/settings
 

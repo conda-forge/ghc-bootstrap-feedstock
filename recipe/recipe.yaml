@@ -21,12 +21,12 @@ source:
       target_directory: bootstrap-ghc
 
 build:
-  number: 0
+  number: 1
   # We will not need x-compiled ghc-bootstrap
   skip: aarch64 or arm64
 
 requirements:
-  host:
+  build:
     - ${{ compiler('c') }}
     - ${{ compiler('cxx') }}
     - ${{ stdlib('c') }}
@@ -50,6 +50,16 @@ requirements:
         - m2-grep
         - m2-tar
         - m2-which
+  host:
+    - ${{ compiler('c') }}
+    - ${{ stdlib('c') }}
+    - gmp
+
+    - if: unix
+      then:
+        - ncurses
+      else:
+        - binutils
   run:
     - if: unix
       then: ${{ stdlib('c') }}
@@ -93,6 +103,8 @@ tests:
             - ghc-bootstrap/bin/ghcii.sh
             - ghc-bootstrap/bin/ghcii${{ version }}.sh
 
+            - ghc-bootstrap/bin/windres.bat
+
             - ghc-bootstrap/lib/settings
             - ghc-bootstrap/lib/package.conf.d/**
 
@@ -104,7 +116,11 @@ tests:
   - script:
       - if: unix
         then: ${PREFIX}/ghc-bootstrap/bin/ghc --version
-        else: CALL %PREFIX%/ghc-bootstrap/bin/ghc.exe --version
+        else:
+          - CALL %PREFIX%/ghc-bootstrap/bin/ghc.exe --version
+          - %PREFIX%/ghc-bootstrap/bin/windres.bat --help
+
+  - script:
       - printf 'main = putStrLn "Hello conda-forge"\n' > hello.hs
       - if: unix
         then: |
