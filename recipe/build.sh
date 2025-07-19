@@ -89,7 +89,7 @@ if [[ ! -d bootstrap-ghc ]]; then
     done
 
     echo "Patching libraries"
-    find "${PREFIX}"/ghc-bootstrap/lib/ghc-"${PKG_VERSION}"/lib -name "*.dylib" | while read -r binary; do
+    find "${PREFIX}"/ghc-bootstrap/lib/ghc-"${PKG_VERSION}"/lib -name "*.dylib" | while read -r lib; do
       # Remove problematic @loader_path and set correct ones
       install_name_tool -delete_rpath "@loader_path" "$lib" 2>/dev/null || true
       install_name_tool -add_rpath "@loader_path/../../../../../lib" "$lib" 2>/dev/null || true
