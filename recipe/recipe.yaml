@@ -1,5 +1,5 @@
 context:
-  version: "9.10.1"
+  version: "9.12.1"
 
 package:
   name: ghc-bootstrap
@@ -9,15 +9,15 @@ source:
   - if: osx
     then:
       url: https://downloads.haskell.org/~ghc/${{ version }}/ghc-${{ version }}-x86_64-apple-darwin.tar.xz
-      sha256: 8cf22188930e10d7ac5270d425e21a3dab606af73a655493639345200c650be9
+      sha256: e6eb460ce2ddd87691c06a0a128adb45b70f339b999dcf845bc1b146f13879f1
   - if: linux
     then:
       url: https://downloads.haskell.org/~ghc/${{ version }}/ghc-${{ version }}-x86_64-ubuntu20_04-linux.tar.xz
-      sha256: ae3be406fdb73bd2b0c22baada77a8ff2f8cde6220dd591dc24541cfe9d895eb
+      sha256: d88379492ce2a5c14c0db1f2d7fc980b40cb44e4b7026e347b72efe2224600ec
   - if: not unix
     then:
-      url: https://downloads.haskell.org/~ghc/${{ version }}/ghc-${{ version }}-x86_64-unknown-mingw32.tar.gz
-      sha256: 2e7d766deaaaef95ddc563aebc5f6cbeb286c51a3c124ab31a89a250f88711f9
+      url: https://downloads.haskell.org/~ghc/${{ version }}/ghc-${{ version }}-x86_64-unknown-mingw32.tar.xz
+      sha256: 22dc942be1b968d5e28e75c06aba52829d0c52d9234bc9941df9ab2a0e2a610d
       target_directory: bootstrap-ghc
 
 build:
@@ -143,4 +143,5 @@ about:
 
 extra:
   recipe-maintainers:
+    - MementoRC
     - eggzilla
