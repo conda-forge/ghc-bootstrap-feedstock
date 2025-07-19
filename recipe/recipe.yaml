@@ -51,8 +51,8 @@ requirements:
         - m2-tar
         - m2-which
   host:
-    - ${{ compiler('c') }}
-    - ${{ stdlib('c') }}
+    # - ${{ compiler('c') }}
+    # - ${{ stdlib('c') }}
     - gmp
 
     - if: unix
