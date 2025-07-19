@@ -51,17 +51,12 @@ requirements:
         - m2-tar
         - m2-which
   host:
-    - ${{ stdlib('c') }}
     - if: linux
       then:
         - gmp
         - ncurses
     - if: not unix
       then: binutils
-  run:
-    - ${{ c_compiler }}_${{ target_platform }}
-    - if: not unix
-      then: ld_impl_win-64 >=2.43
 
 tests:
   - package_contents:
@@ -119,6 +114,7 @@ tests:
     requirements:
       run:
         - ${{ compiler('c') }}
+        - ${{ stdlib('c') }}
         - if: not unix
           then: binutils
 
@@ -135,6 +131,9 @@ tests:
     requirements:
       run:
         - ${{ compiler('c') }}
+        - ${{ stdlib('c') }}
+        - if: not unix
+          then: binutils
 
   - script:
       - printf 'import System.Posix.Signals\nmain = installHandler sigTERM Default Nothing >> putStrLn "Signal test"\n' > signal_test.hs
@@ -147,6 +146,9 @@ tests:
     requirements:
       run:
         - ${{ compiler('c') }}
+        - ${{ stdlib('c') }}
+        - if: not unix
+          then: binutils
 
 about:
   homepage: https://haskell.org/ghc/
@@ -156,6 +158,15 @@ about:
   description: |
     GHC is a state-of-the-art, open source, compiler and interactive environment 
     for the functional language Haskell.
+    
+    Conda-Forge Requirements:
+    - Linux: glibc >= 2.34, clang compiler
+    - macOS: macOS >= 11.0, clang compiler
+    - Windows: MSYS2/MinGW toolchain, binutils
+    Note: Windows builds may show overlinking warnings for system DLLs
+    (SHLWAPI.dll, WSOCK32.dll, WINMM.dll). These are benign and don't
+    affect functionality.
+    
   documentation: https://www.haskell.org/ghc/documentation.html
   repository: https://gitlab.haskell.org/ghc/ghc
 
