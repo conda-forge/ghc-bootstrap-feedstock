@@ -33,10 +33,16 @@ if [[ ! -d bootstrap-ghc ]]; then
   perl -i -pe 's#("C compiler link flags", ")([^"]*)"#\1\2 -L\$topdir/../../../../lib"#g' "${settings_file}"
 
   ## RPATH to conda's lib last
-  perl -i -pe 's#("C compiler link flags", ")([^"]*)"#\1\2 -Wl,-rpath,\$topdir/../../../../lib"#g' "${settings_file}"
-
   if [[ "${target_platform}" == "linux-"* ]]; then
-    # We enforce prioritizing the sysroot for self-consistently finding the libraries
+    perl -i -pe 's#("C compiler link flags", ")([^"]*)"#\1\2 -Wl,-rpath,\$topdir/../../../../lib"#g' "${settings_file}"
+  fi
+
+  if [[ "${target_platform}" == "osx-"* ]]; then
+    perl -i -pe 's/("C compiler link flags", ")([^"]*)"/\1-Wl,-rpath,@loader_path\/..\/..\/..\/..\/..\/lib -Wl,-rpath,@loader_path"/g' "${settings_file}"
+  fi
+  
+  # We enforce prioritizing the sysroot for self-consistently finding the libraries
+  if [[ "${target_platform}" == "linux-"* ]]; then
     echo "Patching binaries"
     find "${PREFIX}"/ghc-bootstrap/lib/ghc-"${PKG_VERSION}"/bin -maxdepth 1 -type f -executable | while read -r binary; do
       if file "$binary" | grep -q "ELF"; then
@@ -55,7 +61,7 @@ if [[ ! -d bootstrap-ghc ]]; then
     echo " done"
 
     echo "Patching libraries"
-    find "${PREFIX}"/ghc-bootstrap/lib/ghc-"${PKG_VERSION}"/lib/x86_64-linux-ghc-"${PKG_VERSION}" -maxdepth 1 -type f -executable | while read -r binary; do
+    find "${PREFIX}"/ghc-bootstrap/lib/ghc-"${PKG_VERSION}"/lib/x86_64-linux-ghc-"${PKG_VERSION}*" -maxdepth 1 -type f -executable | while read -r binary; do
       if file "$binary" | grep -q "ELF"; then
         current_rpath=$(patchelf --print-rpath "$binary" 2>/dev/null || echo "")
         sysroot_lib64="\$ORIGIN/../../../../../x86_64-conda-linux-gnu/sysroot/lib64"
@@ -72,9 +78,28 @@ if [[ ! -d bootstrap-ghc ]]; then
     echo " done"
   fi
 
+  # We enforce prioritizing the sysroot for self-consistently finding the libraries
+  if [[ "${target_platform}" == "osx-"* ]]; then
+    echo "Patching binaries"
+    find "${PREFIX}"/ghc-bootstrap/lib/ghc-"${PKG_VERSION}"/bin -maxdepth 1 -type f -executable | while read -r binary; do
+      # Remove problematic @loader_path and set correct ones
+      install_name_tool -delete_rpath "@loader_path" "$lib" 2>/dev/null || true
+      install_name_tool -add_rpath "@loader_path/../../../../../lib" "$lib" 2>/dev/null || true
+      install_name_tool -add_rpath "@loader_path" "$lib" 2>/dev/null || true
+    done
+
+    echo "Patching libraries"
+    find "${PREFIX}"/ghc-bootstrap/lib/ghc-"${PKG_VERSION}"/lib -name "*.dylib" | while read -r binary; do
+      # Remove problematic @loader_path and set correct ones
+      install_name_tool -delete_rpath "@loader_path" "$lib" 2>/dev/null || true
+      install_name_tool -add_rpath "@loader_path/../../../../../lib" "$lib" 2>/dev/null || true
+      install_name_tool -add_rpath "@loader_path" "$lib" 2>/dev/null || true
+    done
+  fi
+
   # Verify sysroot compatibility
   printf 'import System.Posix.Signals\nmain = installHandler sigTERM Default Nothing >> putStrLn "Signal test"\n' > signal_test.hs
-  "${PREFIX}"/ghc-bootstrap/bin/ghc -v signal_test.hs
+  "${PREFIX}"/ghc-bootstrap/bin/ghc signal_test.hs
   if ./signal_test; then
     echo "Signal test passed"
   else
@@ -165,12 +190,12 @@ license_files_dir=$(find "${PREFIX}"/ghc-bootstrap/"${share}"/doc -name "${arch}
 
 echo "License files directory: ${license_files_dir}"
 for pkg in $(find "${PREFIX}"/ghc-bootstrap/lib -name '*.conf' -print0 | env -i PATH="$PATH" xargs -0 grep -l '^license:' | sort -u); do
-  echo "Processing package: ${pkg}"
   pkg_name=$(basename "${pkg}" .conf)
   pkg_name=${pkg_name%-*}
   license_file=$(find "${license_files_dir}/${pkg_name}" -name LICENSE | head -n 1)
   if [[ -f "${license_file}" ]]; then
-    echo "Found license file for ${pkg_name}: ${license_file}"
+    echo -n "."
     cp "${license_file}" "${SRC_DIR}"/license_files/"${pkg_name}"-LICENSE
   fi
 done
+echo " done"
