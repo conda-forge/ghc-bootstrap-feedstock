@@ -118,7 +118,7 @@ tests:
         then: ${PREFIX}/ghc-bootstrap/bin/ghc --version
         else:
           - CALL %PREFIX%/ghc-bootstrap/bin/ghc.exe --version
-          - %PREFIX%/ghc-bootstrap/bin/windres.bat --help
+          - CALL %PREFIX%/ghc-bootstrap/bin/windres.bat --help
 
   - script:
       - printf 'main = putStrLn "Hello conda-forge"\n' > hello.hs
