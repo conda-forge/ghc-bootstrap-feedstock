@@ -94,6 +94,7 @@ else
     tar cf - ./* | (cd "${PREFIX}/ghc-bootstrap" || exit; tar xf -)
   popd 2>/dev/null || exit 1
 
+  # Reassign mingw references to conda Mingw
   perl -i -pe 's#\$topdir/../mingw//bin/(llvm-)?##' "${PREFIX}"/ghc-bootstrap/lib/settings
   perl -i -pe 's#-I\$topdir/../mingw//include#-I\$topdir/../../Library/include#g' "${PREFIX}"/ghc-bootstrap/lib/settings
   perl -i -pe 's#-L\$topdir/../mingw//lib#-L\$topdir/../../Library/lib#g' "${PREFIX}"/ghc-bootstrap/lib/settings
@@ -102,10 +103,16 @@ else
   # Add Windows-specific compiler flags to settings
   perl -i -pe 's/("C compiler command", ")([^"]*)"/\1x86_64-w64-mingw32-gcc.exe"/g' "${PREFIX}"/ghc-bootstrap/lib/settings
   perl -i -pe 's/("C\+\+ compiler command", ")([^"]*)"/\1x86_64-w64-mingw32-g++.exe"/g' "${PREFIX}"/ghc-bootstrap/lib/settings
+
+  # Update GHC settings for Windows toolchain compatibility
   perl -i -pe 's/("ar command", ")([^"]*)"/\1x86_64-w64-mingw32-ar.exe"/g' "${BUILD_PREFIX}"/ghc-bootstrap/lib/settings
   perl -i -pe 's/("ar flags", ")([^"]*)"/\1qc"/g' "${PREFIX}"/ghc-bootstrap/lib/settings
   perl -i -pe 's/("ar supports -L", ")([^"]*)"/\1NO"/g' "${PREFIX}"/ghc-bootstrap/lib/settings
 
+  # Force use of GNU ld instead of lld to avoid relocation type 0xe errors
+  perl -i -pe 's/("Merge objects command", ")([^"]*)"/\1x86_64-w64-mingw32-ld.exe"/g' "${BUILD_PREFIX}"/ghc-bootstrap/lib/settings
+  perl -i -pe 's/("C compiler link flags", ")([^"]*)"/\1-fuse-ld=bfd"/g' "${BUILD_PREFIX}"/ghc-bootstrap/lib/settings
+  
   # Remove clang compiler options
   perl -i -pe 's/--rtlib=compiler-rt//g' "${PREFIX}"/ghc-bootstrap/lib/settings
   perl -i -pe 's/-Qunused-arguments//g' "${PREFIX}"/ghc-bootstrap/lib/settings
