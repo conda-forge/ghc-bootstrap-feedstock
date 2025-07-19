@@ -78,25 +78,6 @@ if [[ ! -d bootstrap-ghc ]]; then
     echo " done"
   fi
 
-  # We enforce prioritizing the sysroot for self-consistently finding the libraries
-  if [[ "${target_platform}" == "osx-"* ]]; then
-    echo "Patching binaries"
-    find "${PREFIX}"/ghc-bootstrap/lib/ghc-"${PKG_VERSION}"/bin -maxdepth 1 -type f | while read -r binary; do
-      # Remove problematic @loader_path and set correct ones
-      install_name_tool -delete_rpath "@loader_path" "$binary" 2>/dev/null || true
-      install_name_tool -add_rpath "@loader_path/../../../../../lib" "$binary" 2>/dev/null || true
-      install_name_tool -add_rpath "@loader_path" "$binary" 2>/dev/null || true
-    done
-
-    echo "Patching libraries"
-    find "${PREFIX}"/ghc-bootstrap/lib/ghc-"${PKG_VERSION}"/lib -name "*.dylib" | while read -r lib; do
-      # Remove problematic @loader_path and set correct ones
-      install_name_tool -delete_rpath "@loader_path" "$lib" 2>/dev/null || true
-      install_name_tool -add_rpath "@loader_path/../../../../../lib" "$lib" 2>/dev/null || true
-      install_name_tool -add_rpath "@loader_path" "$lib" 2>/dev/null || true
-    done
-  fi
-
   # Verify sysroot compatibility
   printf 'import System.Posix.Signals\nmain = installHandler sigTERM Default Nothing >> putStrLn "Signal test"\n' > signal_test.hs
   "${PREFIX}"/ghc-bootstrap/bin/ghc signal_test.hs
