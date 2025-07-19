@@ -1,5 +1,5 @@
 context:
-  version: "9.12.2"
+  version: "9.12.1"
 
 package:
   name: ghc-bootstrap
@@ -9,24 +9,24 @@ source:
   - if: osx
     then:
       url: https://downloads.haskell.org/~ghc/${{ version }}/ghc-${{ version }}-x86_64-apple-darwin.tar.xz
-      sha256: e7a40e39059dd3619d7884b7382f357e79a0f4e430181b805bdd57b3be9a7300
+      sha256: e6eb460ce2ddd87691c06a0a128adb45b70f339b999dcf845bc1b146f13879f1
   - if: linux
     then:
       url: https://downloads.haskell.org/~ghc/${{ version }}/ghc-${{ version }}-x86_64-ubuntu20_04-linux.tar.xz
-      sha256: 0cffff0a74131465bb5d1447400ea46080a10e3cd46d6c9559aa6f2a6a7537ac
+      sha256: d88379492ce2a5c14c0db1f2d7fc980b40cb44e4b7026e347b72efe2224600ec
   - if: not unix
     then:
       url: https://downloads.haskell.org/~ghc/${{ version }}/ghc-${{ version }}-x86_64-unknown-mingw32.tar.xz
-      sha256: eccd82af0c7d1d5316f30e0a6dd2d6ff608a4a2a99fbdf5ccb0786c49da59b1d
+      sha256: 22dc942be1b968d5e28e75c06aba52829d0c52d9234bc9941df9ab2a0e2a610d
       target_directory: bootstrap-ghc
 
 build:
-  number: 0
+  number: 1
   # We will not need x-compiled ghc-bootstrap
   skip: aarch64 or arm64
 
 requirements:
-  host:
+  build:
     - ${{ compiler('c') }}
     - ${{ compiler('cxx') }}
     - ${{ stdlib('c') }}
@@ -50,10 +50,14 @@ requirements:
         - m2-grep
         - m2-tar
         - m2-which
-  run:
-    - if: unix
-      then: ${{ stdlib('c') }}
-      else: ld_impl_win-64 >=2.43
+  host:
+    - if: linux
+      then:
+        - gmp
+        - ncurses
+    - if: not unix
+      then: binutils
+
 tests:
   - package_contents:
       files:
@@ -91,6 +95,8 @@ tests:
             - ghc-bootstrap/bin/ghcii.sh
             - ghc-bootstrap/bin/ghcii${{ version }}.sh
 
+            - ghc-bootstrap/bin/windres.bat
+
             - ghc-bootstrap/lib/settings
             - ghc-bootstrap/lib/package.conf.d/**
 
@@ -102,11 +108,21 @@ tests:
   - script:
       - if: unix
         then: ${PREFIX}/ghc-bootstrap/bin/ghc --version
-        else: CALL %PREFIX%/ghc-bootstrap/bin/ghc.exe --version
+        else:
+          - CALL %PREFIX%/ghc-bootstrap/bin/ghc.exe --version
+          - CALL %PREFIX%/ghc-bootstrap/bin/windres.bat --help
+    requirements:
+      run:
+        - ${{ compiler('c') }}
+        - ${{ stdlib('c') }}
+        - if: not unix
+          then: binutils
+
+  - script:
       - printf 'main = putStrLn "Hello conda-forge"\n' > hello.hs
       - if: unix
         then: |
-          ${PREFIX}/ghc-bootstrap/bin/ghc -v hello.hs
+          ${PREFIX}/ghc-bootstrap/bin/ghc hello.hs
           ./hello
         else: |
           echo main = putStrLn "Hello conda-forge" > hello.hs
@@ -115,18 +131,24 @@ tests:
     requirements:
       run:
         - ${{ compiler('c') }}
+        - ${{ stdlib('c') }}
+        - if: not unix
+          then: binutils
 
   - script:
       - printf 'import System.Posix.Signals\nmain = installHandler sigTERM Default Nothing >> putStrLn "Signal test"\n' > signal_test.hs
       - if: unix
         then: |
-          ${PREFIX}/ghc-bootstrap/bin/ghc -v signal_test.hs
+          ${PREFIX}/ghc-bootstrap/bin/ghc signal_test.hs
           ./signal_test
         else: |
           echo Skipping signal test on Windows
     requirements:
       run:
         - ${{ compiler('c') }}
+        - ${{ stdlib('c') }}
+        - if: not unix
+          then: binutils
 
 about:
   homepage: https://haskell.org/ghc/
@@ -136,6 +158,15 @@ about:
   description: |
     GHC is a state-of-the-art, open source, compiler and interactive environment 
     for the functional language Haskell.
+    
+    Conda-Forge Requirements:
+    - Linux: glibc >= 2.34, clang compiler
+    - macOS: macOS >= 11.0, clang compiler
+    - Windows: MSYS2/MinGW toolchain, binutils
+    Note: Windows builds may show overlinking warnings for system DLLs
+    (SHLWAPI.dll, WSOCK32.dll, WINMM.dll). These are benign and don't
+    affect functionality.
+    
   documentation: https://www.haskell.org/ghc/documentation.html
   repository: https://gitlab.haskell.org/ghc/ghc
 
