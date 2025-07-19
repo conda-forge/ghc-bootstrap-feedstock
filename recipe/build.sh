@@ -61,7 +61,7 @@ if [[ ! -d bootstrap-ghc ]]; then
     echo " done"
 
     echo "Patching libraries"
-    find "${PREFIX}"/ghc-bootstrap/lib/ghc-"${PKG_VERSION}"/lib/x86_64-linux-ghc-"${PKG_VERSION}*" -maxdepth 1 -type f -executable | while read -r binary; do
+    find "${PREFIX}"/ghc-bootstrap/lib/ghc-"${PKG_VERSION}"/lib/x86_64-linux-ghc-"${PKG_VERSION}"* -maxdepth 1 -type f -executable | while read -r binary; do
       if file "$binary" | grep -q "ELF"; then
         current_rpath=$(patchelf --print-rpath "$binary" 2>/dev/null || echo "")
         sysroot_lib64="\$ORIGIN/../../../../../x86_64-conda-linux-gnu/sysroot/lib64"
