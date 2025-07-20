@@ -21,12 +21,12 @@ source:
       target_directory: bootstrap-ghc
 
 build:
-  number: 0
+  number: 1
   # We will not need x-compiled ghc-bootstrap
   skip: aarch64 or arm64
 
 requirements:
-  host:
+  build:
     - ${{ compiler('c') }}
     - ${{ compiler('cxx') }}
     - ${{ stdlib('c') }}
@@ -50,10 +50,14 @@ requirements:
         - m2-grep
         - m2-tar
         - m2-which
-  run:
-    - if: unix
-      then: ${{ stdlib('c') }}
-      else: ld_impl_win-64 >=2.43
+  host:
+    - if: linux
+      then:
+        - gmp
+        - ncurses
+    - if: not unix
+      then: binutils
+
 tests:
   - package_contents:
       files:
@@ -91,6 +95,8 @@ tests:
             - ghc-bootstrap/bin/ghcii.sh
             - ghc-bootstrap/bin/ghcii${{ version }}.sh
 
+            - ghc-bootstrap/bin/windres.bat
+
             - ghc-bootstrap/lib/settings
             - ghc-bootstrap/lib/package.conf.d/**
 
@@ -102,11 +108,21 @@ tests:
   - script:
       - if: unix
         then: ${PREFIX}/ghc-bootstrap/bin/ghc --version
-        else: CALL %PREFIX%/ghc-bootstrap/bin/ghc.exe --version
+        else:
+          - CALL %PREFIX%/ghc-bootstrap/bin/ghc.exe --version
+          - CALL %PREFIX%/ghc-bootstrap/bin/windres.bat --help
+    requirements:
+      run:
+        - ${{ compiler('c') }}
+        - ${{ stdlib('c') }}
+        - if: not unix
+          then: binutils
+
+  - script:
       - printf 'main = putStrLn "Hello conda-forge"\n' > hello.hs
       - if: unix
         then: |
-          ${PREFIX}/ghc-bootstrap/bin/ghc -v hello.hs
+          ${PREFIX}/ghc-bootstrap/bin/ghc hello.hs
           ./hello
         else: |
           echo main = putStrLn "Hello conda-forge" > hello.hs
@@ -115,18 +131,24 @@ tests:
     requirements:
       run:
         - ${{ compiler('c') }}
+        - ${{ stdlib('c') }}
+        - if: not unix
+          then: binutils
 
   - script:
       - printf 'import System.Posix.Signals\nmain = installHandler sigTERM Default Nothing >> putStrLn "Signal test"\n' > signal_test.hs
       - if: unix
         then: |
-          ${PREFIX}/ghc-bootstrap/bin/ghc -v signal_test.hs
+          ${PREFIX}/ghc-bootstrap/bin/ghc signal_test.hs
           ./signal_test
         else: |
           echo Skipping signal test on Windows
     requirements:
       run:
         - ${{ compiler('c') }}
+        - ${{ stdlib('c') }}
+        - if: not unix
+          then: binutils
 
 about:
   homepage: https://haskell.org/ghc/
@@ -136,6 +158,15 @@ about:
   description: |
     GHC is a state-of-the-art, open source, compiler and interactive environment 
     for the functional language Haskell.
+    
+    Conda-Forge Requirements:
+    - Linux: glibc >= 2.34, clang compiler
+    - macOS: macOS >= 11.0, clang compiler
+    - Windows: MSYS2/MinGW toolchain, binutils
+    Note: Windows builds may show overlinking warnings for system DLLs
+    (SHLWAPI.dll, WSOCK32.dll, WINMM.dll). These are benign and don't
+    affect functionality.
+    
   documentation: https://www.haskell.org/ghc/documentation.html
   repository: https://gitlab.haskell.org/ghc/ghc
 
