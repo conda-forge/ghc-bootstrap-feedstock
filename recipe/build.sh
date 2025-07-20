@@ -30,15 +30,8 @@ if [[ ! -d bootstrap-ghc ]]; then
 
   settings_file="${PREFIX}"/ghc-bootstrap/lib/ghc-"${PKG_VERSION}"/lib/settings
   perl -i -pe 's#($ENV{BUILD_PREFIX}|$ENV{PREFIX})/bin/##' "${settings_file}"
-  perl -i -pe 's#("C compiler link flags", ")([^"]*)"#\1\2 -L\$topdir/../../../../lib"#g' "${settings_file}"
+  perl -i -pe 's#("C compiler link flags", ")([^"]*)"#\1\2 -L\$topdir/../../../../lib -Wl,-rpath,\$topdir/../../../../lib"#g' "${settings_file}"
 
-  if [[ "${target_platform}" == "osx-"* ]]; then
-    perl -i -pe 's#("C compiler link flags", ")([^"]*)"#\1-Wl,-rpath,@loader_path/../../../../../lib -Wl,-rpath,@loader_path"#g' "${settings_file}"
-  fi
-
-  ## RPATH to conda's lib last: Building cabal fails to -lresolv on macos
-  perl -i -pe 's#("C compiler link flags", ")([^"]*)"#\1\2 -Wl,-rpath,\$topdir/../../../../lib"#g' "${settings_file}"
-  
   # We enforce prioritizing the sysroot for self-consistently finding the libraries
   if [[ "${target_platform}" == "linux-"* ]]; then
     echo "Patching binaries"
