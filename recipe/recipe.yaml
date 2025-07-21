@@ -1,5 +1,5 @@
 context:
-  version: "9.10.1"
+  version: "9.12.2"
 
 package:
   name: ghc-bootstrap
@@ -9,19 +9,19 @@ source:
   - if: osx
     then:
       url: https://downloads.haskell.org/~ghc/${{ version }}/ghc-${{ version }}-x86_64-apple-darwin.tar.xz
-      sha256: 8cf22188930e10d7ac5270d425e21a3dab606af73a655493639345200c650be9
+      sha256: e7a40e39059dd3619d7884b7382f357e79a0f4e430181b805bdd57b3be9a7300
   - if: linux
     then:
       url: https://downloads.haskell.org/~ghc/${{ version }}/ghc-${{ version }}-x86_64-ubuntu20_04-linux.tar.xz
-      sha256: ae3be406fdb73bd2b0c22baada77a8ff2f8cde6220dd591dc24541cfe9d895eb
+      sha256: 0cffff0a74131465bb5d1447400ea46080a10e3cd46d6c9559aa6f2a6a7537ac
   - if: not unix
     then:
       url: https://downloads.haskell.org/~ghc/${{ version }}/ghc-${{ version }}-x86_64-unknown-mingw32.tar.xz
-      sha256: 8bac01906ec2fa5c10c730b5ee5b8165654d654dbaf25ba9d3c42f8e26484c6a
+      sha256: eccd82af0c7d1d5316f30e0a6dd2d6ff608a4a2a99fbdf5ccb0786c49da59b1d
       target_directory: bootstrap-ghc
 
 build:
-  number: 2
+  number: 3
   # We will not need x-compiled ghc-bootstrap
   skip: aarch64 or arm64
 
