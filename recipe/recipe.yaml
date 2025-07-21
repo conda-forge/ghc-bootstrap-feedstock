@@ -21,7 +21,7 @@ source:
       target_directory: bootstrap-ghc
 
 build:
-  number: 2
+  number: 3
   # We will not need x-compiled ghc-bootstrap
   skip: aarch64 or arm64
 
