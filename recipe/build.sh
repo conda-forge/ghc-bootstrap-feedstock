@@ -30,6 +30,9 @@ if [[ ! -d bootstrap-ghc ]]; then
 
   settings_file="${PREFIX}"/ghc-bootstrap/lib/ghc-"${PKG_VERSION}"/lib/settings
   perl -i -pe 's#($ENV{BUILD_PREFIX}|$ENV{PREFIX})/bin/##' "${settings_file}"
+  # Add sysroot (this helps when cross-compiling on conda forge)
+  perl -i -pe 's#("C compiler link flags", "--target[^\s]*)#\1 --sysroot=\$topdir/../../../../x86_64-conda-linux-gnu/sysroot#g' "${settings_file}"
+  # Add system libs
   perl -i -pe 's#("C compiler link flags", ")([^"]*)"#\1\2 -L\$topdir/../../../../lib -Wl,-rpath,\$topdir/../../../../lib"#g' "${settings_file}"
 
   # We enforce prioritizing the sysroot for self-consistently finding the libraries
@@ -71,13 +74,16 @@ if [[ ! -d bootstrap-ghc ]]; then
 
   # Verify sysroot compatibility
   printf 'import System.Posix.Signals\nmain = installHandler sigTERM Default Nothing >> putStrLn "Signal test"\n' > signal_test.hs
+  # We need to map the PREFIX environment sysroot
+  mkdir -p "${PREFIX}"/x86_64-conda-linux-gnu && ln -s "${BUILD_PREFIX}"/x86_64-conda-linux-gnu/sysroot "${PREFIX}"/x86_64-conda-linux-gnu/sysroot
   "${PREFIX}"/ghc-bootstrap/bin/ghc signal_test.hs
   if ./signal_test; then
     echo "Signal test passed"
   else
     echo "Signal test failed with exit code $?"
   fi
-
+  rm -rf "${PREFIX}"/x86_64-conda-linux-gnu
+  
   # Reduce footprint
   rm -rf "${PREFIX}"/ghc-bootstrap/share/doc/ghc-"${PKG_VERSION}"/html
   find "${PREFIX}"/ghc-bootstrap/lib/ghc-"${PKG_VERSION}" -name '*_p.a' -delete
