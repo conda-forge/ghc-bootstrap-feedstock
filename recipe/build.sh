@@ -30,13 +30,14 @@ if [[ ! -d bootstrap-ghc ]]; then
 
   settings_file="${PREFIX}"/ghc-bootstrap/lib/ghc-"${PKG_VERSION}"/lib/settings
   perl -i -pe 's#($ENV{BUILD_PREFIX}|$ENV{PREFIX})/bin/##' "${settings_file}"
-  # Add sysroot (this helps when cross-compiling on conda forge)
-  perl -i -pe 's#("C compiler link flags", "--target[^\s]*)#\1 --sysroot=\$topdir/../../../../x86_64-conda-linux-gnu/sysroot#g' "${settings_file}"
   # Add system libs
   perl -i -pe 's#("C compiler link flags", ")([^"]*)"#\1\2 -L\$topdir/../../../../lib -Wl,-rpath,\$topdir/../../../../lib"#g' "${settings_file}"
 
   # We enforce prioritizing the sysroot for self-consistently finding the libraries
   if [[ "${target_platform}" == "linux-"* ]]; then
+    # Add sysroot (this helps when cross-compiling on conda forge)
+    perl -i -pe 's#("C compiler link flags", "--target[^\s]*)#\1 --sysroot=\$topdir/../../../../x86_64-conda-linux-gnu/sysroot#g' "${settings_file}"
+
     echo "Patching binaries"
     find "${PREFIX}"/ghc-bootstrap/lib/ghc-"${PKG_VERSION}"/bin -maxdepth 1 -type f -executable | while read -r binary; do
       if file "$binary" | grep -q "ELF"; then
