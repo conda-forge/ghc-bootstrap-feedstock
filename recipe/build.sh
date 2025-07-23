@@ -71,12 +71,13 @@ if [[ ! -d bootstrap-ghc ]]; then
       fi
     done
     echo " done"
+
+    # We need to map the PREFIX environment sysroot
+    mkdir -p "${PREFIX}"/x86_64-conda-linux-gnu && ln -s "${BUILD_PREFIX}"/x86_64-conda-linux-gnu/sysroot "${PREFIX}"/x86_64-conda-linux-gnu/sysroot
   fi
 
   # Verify sysroot compatibility
   printf 'import System.Posix.Signals\nmain = installHandler sigTERM Default Nothing >> putStrLn "Signal test"\n' > signal_test.hs
-  # We need to map the PREFIX environment sysroot
-  mkdir -p "${PREFIX}"/x86_64-conda-linux-gnu && ln -s "${BUILD_PREFIX}"/x86_64-conda-linux-gnu/sysroot "${PREFIX}"/x86_64-conda-linux-gnu/sysroot
   "${PREFIX}"/ghc-bootstrap/bin/ghc signal_test.hs
   if ./signal_test; then
     echo "Signal test passed"
