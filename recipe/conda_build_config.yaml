@@ -2,19 +2,20 @@ c_stdlib:                       # [not osx]
   - sysroot                     # [linux]
   - m2w64-sysroot               # [not unix]
 c_stdlib_version:
-  - 11.0                        # [osx]
-  - 2.34                        # [linux]
+  - 10.13                       # [osx]
+  - 2.17                        # [linux]
   - 12                          # [not unix]
 
 c_compiler:
   - clang                       # [unix]
   - gcc                         # [not unix]
 c_compiler_version:
-  - 19                          # [unix]
+  - 18                          # [unix]
   - 15                          # [not unix]
+
 cxx_compiler:
   - clangxx                     # [unix]
   - gxx                         # [not unix]
 cxx_compiler_version:
-  - 19                          # [unix]
+  - 18                          # [unix]
   - 15                          # [not unix]
