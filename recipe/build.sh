@@ -35,7 +35,7 @@ if [[ ! -d bootstrap-ghc ]]; then
 
   # We enforce prioritizing the sysroot for self-consistently finding the libraries
   if [[ "${target_platform}" == "osx-"* ]] && [[ -n "${SDKROOT}" ]]; then
-    perl -i -pe 's#("C compiler link flags", ")([^"]*)"#\1\2 -L$ENV{SDKROOT}/usr/lib"#g' "${settings_file}"
+    perl -i -pe 's#("C compiler link flags", ")([^"]*)"#\1\2 $ENV{SDKROOT}/usr/lib/libiconv.2.tbd -L$ENV{SDKROOT}/usr/lib"#g' "${settings_file}"
   fi
 
   if [[ "${target_platform}" == "linux-"* ]]; then
@@ -46,14 +46,19 @@ if [[ ! -d bootstrap-ghc ]]; then
     find "${PREFIX}"/ghc-bootstrap/lib/ghc-"${PKG_VERSION}"/bin -maxdepth 1 -type f -executable | while read -r binary; do
       if file "$binary" | grep -q "ELF"; then
         current_rpath=$(patchelf --print-rpath "$binary" 2>/dev/null || echo "")
-        sysroot_lib64="\$ORIGIN/../../../../x86_64-conda-linux-gnu/sysroot/lib64"
-        sysroot_usr_lib64="\$ORIGIN/../../../../x86_64-conda-linux-gnu/sysroot/usr/lib64"
-        conda_lib="\$ORIGIN/../../../../lib"
-        if [[ -n "$current_rpath" ]]; then
-          new_rpath="${sysroot_lib64}:${sysroot_usr_lib64}:${conda_lib}:${current_rpath}"
-        else
-          new_rpath="${sysroot_lib64}:${sysroot_usr_lib64}:${conda_lib}"
-        fi
+        
+        new_rpath=""
+        base_dir="$(dirname "$binary")"
+        for path in "../../../../x86_64-conda-linux-gnu/sysroot/lib64" \
+                    "../../../../x86_64-conda-linux-gnu/sysroot/usr/lib64" \
+                    "../../../../x86_64-conda-linux-gnu/lib" \
+                    "../../../../lib"; do
+          if [[ -d "${base_dir}/${path}" ]]; then
+            new_rpath="${new_rpath:+$new_rpath:}\$ORIGIN/${path}"
+          fi
+        done
+                
+        new_rpath="${new_rpath}${current_rpath:+:$current_rpath}"
         patchelf --set-rpath "$new_rpath" "$binary" 2>/dev/null && echo -n "."
       fi
     done
@@ -63,14 +68,18 @@ if [[ ! -d bootstrap-ghc ]]; then
     find "${PREFIX}"/ghc-bootstrap/lib/ghc-"${PKG_VERSION}"/lib/x86_64-linux-ghc-"${PKG_VERSION}"* -maxdepth 1 -type f -executable | while read -r binary; do
       if file "$binary" | grep -q "ELF"; then
         current_rpath=$(patchelf --print-rpath "$binary" 2>/dev/null || echo "")
-        sysroot_lib64="\$ORIGIN/../../../../../x86_64-conda-linux-gnu/sysroot/lib64"
-        sysroot_usr_lib64="\$ORIGIN/../../../../../x86_64-conda-linux-gnu/sysroot/usr/lib64"
-        conda_lib="\$ORIGIN/../../../../../lib"
-        if [[ -n "$current_rpath" ]]; then
-          new_rpath="${sysroot_lib64}:${sysroot_usr_lib64}:${conda_lib}:${current_rpath}"
-        else
-          new_rpath="${sysroot_lib64}:${sysroot_usr_lib64}:${conda_lib}"
-        fi
+        new_rpath=""
+        base_dir="$(dirname "$binary")"
+        for path in "../../../../x86_64-conda-linux-gnu/sysroot/lib64" \
+                    "../../../../x86_64-conda-linux-gnu/sysroot/usr/lib64" \
+                    "../../../../x86_64-conda-linux-gnu/lib" \
+                    "../../../../lib"; do
+          if [[ -d "${base_dir}/${path}" ]]; then
+            new_rpath="${new_rpath:+$new_rpath:}\$ORIGIN/${path}"
+          fi
+        done
+                
+        new_rpath="${new_rpath}${current_rpath:+:$current_rpath}"
         patchelf --set-rpath "$new_rpath" "$binary" 2>/dev/null && echo -n "."
       fi
     done
@@ -81,6 +90,7 @@ if [[ ! -d bootstrap-ghc ]]; then
   fi
 
   # Verify sysroot compatibility
+  echo "Verify sysroot compatibility"
   printf 'import System.Posix.Signals\nmain = installHandler sigTERM Default Nothing >> putStrLn "Signal test"\n' > signal_test.hs
   "${PREFIX}"/ghc-bootstrap/bin/ghc signal_test.hs
   if ./signal_test; then
@@ -156,30 +166,3 @@ rm -f "${PREFIX}"/ghc-bootstrap/lib/ghc-"${PKG_VERSION}"/lib/package.conf.d/pack
 
 mkdir -p "${PREFIX}/etc/conda/activate.d"
 cp "${RECIPE_DIR}/activate.sh" "${PREFIX}/etc/conda/activate.d/${PKG_NAME}_activate.sh"
-
-# Add package licenses
-mkdir -p "${SRC_DIR}"/license_files
-arch="-${target_platform#*-}"
-arch="${arch//-64/-x86_64}"
-arch="${arch#*-}"
-arch="${arch//arm64/aarch64}"
-os=${target_platform%%-*}
-os="${os//win/windows}"
-if [[ "${target_platform}" == "linux-"* ]] || [[ "${target_platform}" == "osx-"* ]]; then
-  share="share"
-else
-  share="lib"
-fi
-license_files_dir=$(find "${PREFIX}"/ghc-bootstrap/"${share}"/doc -name "${arch}-${os}-ghc-${PKG_VERSION}*" -type d | head -n 1)
-
-echo "License files directory: ${license_files_dir}"
-for pkg in $(find "${PREFIX}"/ghc-bootstrap/lib -name '*.conf' -print0 | env -i PATH="$PATH" xargs -0 grep -l '^license:' | sort -u); do
-  pkg_name=$(basename "${pkg}" .conf)
-  pkg_name=${pkg_name%-*}
-  license_file=$(find "${license_files_dir}/${pkg_name}" -name LICENSE | head -n 1)
-  if [[ -f "${license_file}" ]]; then
-    echo -n "."
-    cp "${license_file}" "${SRC_DIR}"/license_files/"${pkg_name}"-LICENSE
-  fi
-done
-echo " done"

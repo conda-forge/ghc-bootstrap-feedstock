@@ -1,5 +1,5 @@
 context:
-  version: "9.12.2"
+  version: "9.8.4"
 
 package:
   name: ghc-bootstrap
@@ -9,21 +9,21 @@ source:
   - if: osx
     then:
       url: https://downloads.haskell.org/~ghc/${{ version }}/ghc-${{ version }}-x86_64-apple-darwin.tar.xz
-      sha256: e7a40e39059dd3619d7884b7382f357e79a0f4e430181b805bdd57b3be9a7300
+      sha256: de7baacfb1513ab0e4ccf8911045cceee84bc8a4e39b89bd975ed3135e5f7d96
   - if: linux
     then:
-      url: https://downloads.haskell.org/~ghc/${{ version }}/ghc-${{ version }}-x86_64-ubuntu20_04-linux.tar.xz
-      sha256: 0cffff0a74131465bb5d1447400ea46080a10e3cd46d6c9559aa6f2a6a7537ac
+      url: https://downloads.haskell.org/~ghc/${{ version }}/ghc-${{ version }}-x86_64-centos7-linux.tar.xz
+      sha256: d2f2da6e93ceaa45a1c820720f75b0d06f624aed2377cc777366be8449dbd17f
   - if: not unix
     then:
       url: https://downloads.haskell.org/~ghc/${{ version }}/ghc-${{ version }}-x86_64-unknown-mingw32.tar.xz
-      sha256: eccd82af0c7d1d5316f30e0a6dd2d6ff608a4a2a99fbdf5ccb0786c49da59b1d
+      sha256: 184c9184d6439f1da8bca0214011ef6074fb5946eaa5840dc0c3e884515d7c52
       target_directory: bootstrap-ghc
 
 build:
-  number: 5
+  number: 0
   # We will not need x-compiled ghc-bootstrap
-  skip: aarch64 or arm64
+  skip: aarch64 or ppc64le or arm64
 
 requirements:
   build:
@@ -38,7 +38,7 @@ requirements:
       then:
         - file
         - make
-        - ncurses
+        - ncurses <6
         - patchelf
         - pkg-config
       else:
@@ -54,17 +54,22 @@ requirements:
     - if: linux
       then:
         - gmp
-        - ncurses
+        - ncurses <6
     - if: not unix
       then: binutils
+  run:
+    - if: linux
+      then:
+        - ncurses <6
+    
 
 tests:
   - package_contents:
       files:
+        - ghc-bootstrap/bin/ghc${{ "" if unix else ".exe" }}
         - ghc-bootstrap/bin/ghc-${{ version }}${{ "" if unix else ".exe" }}
         - ghc-bootstrap/bin/ghc-pkg-${{ version }}${{ "" if unix else ".exe" }}
         - ghc-bootstrap/bin/ghc-pkg${{ "" if unix else ".exe" }}
-        - ghc-bootstrap/bin/ghc${{ "" if unix else ".exe" }}
         - ghc-bootstrap/bin/ghci-${{ version }}${{ "" if unix else ".exe" }}
         - ghc-bootstrap/bin/ghci${{ "" if unix else ".exe" }}
         - ghc-bootstrap/bin/haddock-ghc-${{ version }}${{ "" if unix else ".exe" }}
@@ -79,10 +84,9 @@ tests:
         - ghc-bootstrap/bin/runghc${{ "" if unix else ".exe" }}
         - ghc-bootstrap/bin/runhaskell-${{ version }}${{ "" if unix else ".exe" }}
         - ghc-bootstrap/bin/runhaskell${{ "" if unix else ".exe" }}
+        
         - if: unix
           then:
-            - ghc-bootstrap/lib/ghc-${{ version }}/bin/ghc-toolchain-bin-ghc-${{ version }}${{ "" if unix else ".exe" }}
-            - ghc-bootstrap/lib/ghc-${{ version }}/bin/ghc-toolchain-bin${{ "" if unix else ".exe" }}
             - ghc-bootstrap/lib/ghc-${{ version }}/lib/settings
             - ghc-bootstrap/lib/ghc-${{ version }}/lib/package.conf.d/**
           else:
@@ -153,14 +157,14 @@ tests:
 about:
   homepage: https://haskell.org/ghc/
   license: BSD-3-Clause
-  license_file: license_files/
+  license_file: LICENSE.txt
   summary: Glorious Glasgow Haskell Compilation System
   description: |
     GHC is a state-of-the-art, open source, compiler and interactive environment 
     for the functional language Haskell.
     
     Conda-Forge Requirements:
-    - Linux: glibc >= 2.34, clang compiler
+    - Linux: glibc >= 2.17, clang compiler
     - macOS: macOS >= 11.0, clang compiler
     - Windows: MSYS2/MinGW toolchain, binutils
     Note: Windows builds may show overlinking warnings for system DLLs
