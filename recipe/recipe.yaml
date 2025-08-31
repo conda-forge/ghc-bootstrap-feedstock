@@ -161,7 +161,7 @@ tests:
 about:
   homepage: https://haskell.org/ghc/
   license: BSD-3-Clause
-  license_file: LICENSE.txt
+  license_file: license_files
   summary: Glorious Glasgow Haskell Compilation System
   description: |
     GHC is a state-of-the-art, open source, compiler and interactive environment 
@@ -169,7 +169,7 @@ about:
     
     Conda-Forge Requirements:
     - Linux: glibc >= 2.17, clang compiler
-    - macOS: macOS >= 11.0, clang compiler
+    - macOS: macOS >= 10.13, clang compiler
     - Windows: MSYS2/MinGW toolchain, binutils
     Note: Windows builds may show overlinking warnings for system DLLs
     (SHLWAPI.dll, WSOCK32.dll, WINMM.dll). These are benign and don't
