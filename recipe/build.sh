@@ -85,6 +85,30 @@ if [[ ! -d bootstrap-ghc ]]; then
     done
     echo " done"
 
+    echo "Bundling ncurses 5 libraries privately"
+    # Create private library directory
+    mkdir -p "${PREFIX}/ghc-bootstrap/lib/private"
+    
+    # Copy ncurses 5 shared libraries to private location
+    cp "${BUILD_PREFIX}/lib/libncurses.so.5"* "${PREFIX}/ghc-bootstrap/lib/private/" 2>/dev/null || true
+    cp "${BUILD_PREFIX}/lib/libtinfo.so.5"* "${PREFIX}/ghc-bootstrap/lib/private/" 2>/dev/null || true
+    cp "${BUILD_PREFIX}/lib/libtinfow.so.5"* "${PREFIX}/ghc-bootstrap/lib/private/" 2>/dev/null || true
+    
+    # Update rpath for GHC binaries to use private libraries first
+    find "${PREFIX}"/ghc-bootstrap/lib/ghc-"${PKG_VERSION}"/bin -name "ghc*" -type f -executable | while read -r binary; do
+      if file "$binary" | grep -q "ELF"; then
+        if ldd "$binary" 2>/dev/null | grep -q "libncurses\|libtinfo"; then
+          echo "Updating rpath for $binary to use private ncurses"
+          current_rpath=$(patchelf --print-rpath "$binary" 2>/dev/null || echo "")
+          private_lib="\$ORIGIN/../../private"
+
+          new_rpath="${private_lib}${current_rpath:+:$current_rpath}"
+          patchelf --set-rpath "$new_rpath" "$binary" 2>/dev/null && echo -n "."
+        fi
+      fi
+    done
+    echo " done"
+    
     # We need to map the PREFIX environment sysroot
     mkdir -p "${PREFIX}"/x86_64-conda-linux-gnu && ln -s "${BUILD_PREFIX}"/x86_64-conda-linux-gnu/sysroot "${PREFIX}"/x86_64-conda-linux-gnu/sysroot
   fi

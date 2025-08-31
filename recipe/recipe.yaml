@@ -21,7 +21,7 @@ source:
       target_directory: bootstrap-ghc
 
 build:
-  number: 0
+  number: 1
   # We will not need x-compiled ghc-bootstrap
   skip: aarch64 or ppc64le or arm64
 
@@ -34,11 +34,14 @@ requirements:
     - libffi
     - perl
 
+    - if: linux
+      then:
+        - ncurses <6,>=5
+
     - if: unix
       then:
         - file
         - make
-        - ncurses <6
         - patchelf
         - pkg-config
       else:
@@ -54,13 +57,8 @@ requirements:
     - if: linux
       then:
         - gmp
-        - ncurses <6
     - if: not unix
       then: binutils
-  run:
-    - if: linux
-      then:
-        - ncurses <6
     
 
 tests:
@@ -84,6 +82,12 @@ tests:
         - ghc-bootstrap/bin/runghc${{ "" if unix else ".exe" }}
         - ghc-bootstrap/bin/runhaskell-${{ version }}${{ "" if unix else ".exe" }}
         - ghc-bootstrap/bin/runhaskell${{ "" if unix else ".exe" }}
+        
+        - if: linux
+          then:
+            - ghc-bootstrap/lib/private/libncurses.so.5
+            - ghc-bootstrap/lib/private/libtinfo.so.5
+            - ghc-bootstrap/lib/private/libtinfow.so.5
         
         - if: unix
           then:
