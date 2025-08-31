@@ -85,6 +85,30 @@ if [[ ! -d bootstrap-ghc ]]; then
     done
     echo " done"
 
+    echo "Bundling ncurses 5 libraries privately"
+    # Create private library directory
+    mkdir -p "${PREFIX}/ghc-bootstrap/lib/private"
+    
+    # Copy ncurses 5 shared libraries to private location
+    cp "${BUILD_PREFIX}/lib/libncurses.so.5"* "${PREFIX}/ghc-bootstrap/lib/private/" 2>/dev/null || true
+    cp "${BUILD_PREFIX}/lib/libtinfo.so.5"* "${PREFIX}/ghc-bootstrap/lib/private/" 2>/dev/null || true
+    cp "${BUILD_PREFIX}/lib/libtinfow.so.5"* "${PREFIX}/ghc-bootstrap/lib/private/" 2>/dev/null || true
+    
+    # Update rpath for GHC binaries to use private libraries first
+    find "${PREFIX}"/ghc-bootstrap/lib/ghc-"${PKG_VERSION}"/bin -name "ghc*" -type f -executable | while read -r binary; do
+      if file "$binary" | grep -q "ELF"; then
+        if ldd "$binary" 2>/dev/null | grep -q "libncurses\|libtinfo"; then
+          echo "Updating rpath for $binary to use private ncurses"
+          current_rpath=$(patchelf --print-rpath "$binary" 2>/dev/null || echo "")
+          private_lib="\$ORIGIN/../../private"
+
+          new_rpath="${private_lib}${current_rpath:+:$current_rpath}"
+          patchelf --set-rpath "$new_rpath" "$binary" 2>/dev/null && echo -n "."
+        fi
+      fi
+    done
+    echo " done"
+    
     # We need to map the PREFIX environment sysroot
     mkdir -p "${PREFIX}"/x86_64-conda-linux-gnu && ln -s "${BUILD_PREFIX}"/x86_64-conda-linux-gnu/sysroot "${PREFIX}"/x86_64-conda-linux-gnu/sysroot
   fi
@@ -166,3 +190,30 @@ rm -f "${PREFIX}"/ghc-bootstrap/lib/ghc-"${PKG_VERSION}"/lib/package.conf.d/pack
 
 mkdir -p "${PREFIX}/etc/conda/activate.d"
 cp "${RECIPE_DIR}/activate.sh" "${PREFIX}/etc/conda/activate.d/${PKG_NAME}_activate.sh"
+
+# Add package licenses
+mkdir -p "${SRC_DIR}"/license_files
+arch="-${target_platform#*-}"
+arch="${arch//-64/-x86_64}"
+arch="${arch#*-}"
+arch="${arch//arm64/aarch64}"
+os=${target_platform%%-*}
+os="${os//win/windows}"
+if [[ "${target_platform}" == "linux-"* ]] || [[ "${target_platform}" == "osx-"* ]]; then
+  share="share"
+else
+  share="lib"
+fi
+license_files_dir=$(find "${PREFIX}"/ghc-bootstrap/"${share}"/doc -name "${arch}-${os}-ghc-${PKG_VERSION}*" -type d | head -n 1)
+
+echo "License files directory: ${license_files_dir}"
+for pkg in $(find "${PREFIX}"/ghc-bootstrap/lib -name '*.conf' -print0 | env -i PATH="$PATH" xargs -0 grep -l '^license:' | sort -u); do
+  pkg_name=$(basename "${pkg}" .conf)
+  pkg_name=${pkg_name%-*}
+  license_file=$(find "${license_files_dir}/${pkg_name}" -name LICENSE | head -n 1)
+  if [[ -f "${license_file}" ]]; then
+    echo -n "."
+    cp "${license_file}" "${SRC_DIR}"/license_files/"${pkg_name}"-LICENSE
+  fi
+done
+echo " done"
