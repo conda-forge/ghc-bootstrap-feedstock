@@ -46,7 +46,6 @@ requirements:
       then:
         - ncurses <6,>=5
         - patchelf
-        - strace
 
     - if: unix
       then:
