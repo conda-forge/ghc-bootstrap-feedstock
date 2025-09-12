@@ -196,10 +196,12 @@ mkdir -p "${PREFIX}"/ghc-bootstrap "${SRC_DIR}"/_logs
 # Install bootstrap GHC - Set conda platform moniker (we only download non-unix in separate directory)
 if [[ ! -d bootstrap-ghc ]]; then
   # Correct the libc.so script to avoid trying to load /lib64/libc.so.6
-  sysroot_libc_script="${BUILD_PREFIX}/x86_64-conda-linux-gnu/sysroot/usr/lib64/libc.so"
-  sed -i "s|/lib64/libc.so.6|libc.so.6|g" "$sysroot_libc_script"
-  sed -i "s|/usr/lib64/libc_nonshared.a|libc_nonshared.a|g" "$sysroot_libc_script"
-  sed -i "s|/lib64/ld-linux-x86-64.so.2|ld-2.17.so|g" "$sysroot_libc_script"
+  if [[ "${target_platform}" == "linux-"* ]]; then
+    sysroot_libc_script="${BUILD_PREFIX}/x86_64-conda-linux-gnu/sysroot/usr/lib64/libc.so"
+    perl -i "s|/lib64/libc.so.6|libc.so.6|g" "$sysroot_libc_script"
+    perl -i "s|/usr/lib64/libc_nonshared.a|libc_nonshared.a|g" "$sysroot_libc_script"
+    perl -i "s|/lib64/ld-linux-x86-64.so.2|ld-2.17.so|g" "$sysroot_libc_script"
+  fi
   
   echo "Configuring ..."
   
@@ -270,6 +272,9 @@ else
   pushd bootstrap-ghc 2>/dev/null || exit 1
     tar cf - ./* | (cd "${PREFIX}/ghc-bootstrap" || exit; tar xf -)
   popd 2>/dev/null || exit 1
+
+  # Update the installed settings file (find custom libraries, set sysroot, ...)
+  update_settings
 
   # Wrap windres
   perl -i -pe 's#("windres command", ")[^"]*"#\1\$topdir/../bin/windres.bat"#g' "${settings_file}"
