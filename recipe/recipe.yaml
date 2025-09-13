@@ -14,8 +14,6 @@ source:
     then:
       url: https://downloads.haskell.org/~ghc/${{ version }}/ghc-${{ version }}-x86_64-centos7-linux.tar.xz
       sha256: 0047e4820cac57bcb51f2d3bbdade455ee12e190df3af7ba15654e87752b89e1
-      # Alpine needs 2.28: url: https://downloads.haskell.org/~ghc/${{ version }}/ghc-${{ version }}-x86_64-alpine3_12-linux-static-int_native.tar.xz
-      # Alpine needs 2.28: sha256: 7c411cf5285f32c977bf1ed66e2cf7b54f59af2056ed1d125b93c62a724844be
   - if: not unix
     then:
       url: https://downloads.haskell.org/~ghc/${{ version }}/ghc-${{ version }}-x86_64-unknown-mingw32.tar.xz
@@ -23,7 +21,7 @@ source:
       target_directory: bootstrap-ghc
 
 build:
-  number: 2
+  number: 3
   dynamic_linking:
     binary_relocation:
       - ghc-bootstrap/lib/${{ version }}/bin/*
@@ -38,8 +36,6 @@ requirements:
     - ${{ compiler('c') }}
     - ${{ compiler('cxx') }}
     - ${{ stdlib('c') }}
-    - gmp
-    - libffi
     - perl 5.32.1.*
 
     - if: linux
@@ -63,9 +59,8 @@ requirements:
         - m2-tar
         - m2-which
   host:
-    - if: linux
-      then:
-        - gmp
+    - gmp
+    - libffi
     - if: not unix
       then: binutils
     

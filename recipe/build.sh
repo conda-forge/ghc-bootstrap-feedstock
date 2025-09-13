@@ -12,7 +12,7 @@ update_settings() {
 
     if [[ -n "${SDKROOT}" ]] && [[ -f "${SDKROOT}/usr/lib/libiconv.2.tbd" ]]; then
       # For 9.6.7, we need the SDK iconv, the problem is that settings does not expand variables, so we need a predictable path
-      perl -i -pe 's#("C compiler link flags", ")([^"]*)"#\1\2 \$topdir/../../../../ghc-bootstrap/lib/private/libiconv.2.tbd -L$topdir/../../../../ghc-bootstrap/lib/private"#g' "${settings_file}"
+      perl -i -pe 's#("C compiler link flags", ")([^"]*)"#\1\2 \$topdir/../../../../ghc-bootstrap/lib/private/libiconv.2.tbd -L\$topdir/../../../../ghc-bootstrap/lib/private"#g' "${settings_file}"
     fi
     
   elif [[ "${target_platform}" == "linux-"* ]]; then
@@ -23,9 +23,9 @@ update_settings() {
     
     # Fixing the sysroot
     compiling="--sysroot=\\\$topdir/../../../../x86_64-conda-linux-gnu/sysroot"
-    compiling="${compiling} -isystem=\\\$topdir/../../../../x86_64-conda-linux-gnu/sysroot/usr/include"
+    compiling="${compiling} -isystem=\\\$topdir/../../../../x86_64-conda-linux-gnu/sysroot/usr/include -D_GNU_SOURCE"
     
-    clang_linking="-v --sysroot=\\\$topdir/../../../../x86_64-conda-linux-gnu/sysroot"
+    clang_linking="--sysroot=\\\$topdir/../../../../x86_64-conda-linux-gnu/sysroot"
     clang_linking="${clang_linking} -Wl,-L\\\$topdir/../../../../x86_64-conda-linux-gnu/sysroot/lib64"
     clang_linking="${clang_linking} -Wl,-L\\\$topdir/../../../../x86_64-conda-linux-gnu/sysroot/usr/lib64"
     clang_linking="${clang_linking} -Wl,-L\\\$topdir/../../../../x86_64-conda-linux-gnu/lib"
@@ -41,7 +41,7 @@ update_settings() {
     clang_linking="${clang_linking} -Wl,--dynamic-linker,\\\$topdir/../../../../x86_64-conda-linux-gnu/sysroot/lib64/ld-2.17.so"
     clang_linking="${clang_linking} -Wl,--disable-new-dtags"
     
-    ld_linking="-v --sysroot=\\\$topdir/../../../../x86_64-conda-linux-gnu/sysroot"
+    ld_linking="--sysroot=\\\$topdir/../../../../x86_64-conda-linux-gnu/sysroot"
     ld_linking="${ld_linking} -L\\\$topdir/../../../../x86_64-conda-linux-gnu/sysroot/lib64"
     ld_linking="${ld_linking} -L\\\$topdir/../../../../x86_64-conda-linux-gnu/sysroot/usr/lib64"
     ld_linking="${ld_linking} -L\\\$topdir/../../../../x86_64-conda-linux-gnu/lib"
@@ -99,7 +99,6 @@ update_settings() {
 
 fine_tune_linux_rpaths() {
   # Fine-tune RPATHs
-#    "${PREFIX}"/ghc-bootstrap/lib/ghc-"${PKG_VERSION}"/lib/x86_64-linux-ghc-"${PKG_VERSION}" \
   for dir in \
     "${PREFIX}"/ghc-bootstrap/bin \
     "${PREFIX}"/ghc-bootstrap/lib/ghc-"${PKG_VERSION}"/bin \
@@ -178,8 +177,6 @@ fine_tune_linux_rpaths() {
           # Anchor interpreter to the versionned loader
           echo -n ":"
           patchelf --set-interpreter "${PREFIX}/ghc-bootstrap/lib/private/ld-2.17.so" "${binary}" && echo -n "*"
-          # patchelf --set-interpreter "" "${binary}" && echo "*"
-          # patchelf --set-interpreter "/lib64/ld-linux-x86-64.so.2" "${binary}" && echo "*"
         fi
         echo -n "]"
       fi
