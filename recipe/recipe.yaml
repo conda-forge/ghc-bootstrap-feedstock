@@ -21,7 +21,13 @@ source:
       target_directory: bootstrap-ghc
 
 build:
-  number: 1
+  number: 2
+  dynamic_linking:
+    binary_relocation:
+      - ghc-bootstrap/lib/${{ version }}/bin/*
+  prefix_detection:
+    ignore:
+      - ghc-bootstrap/**/*.so
   # We will not need x-compiled ghc-bootstrap
   skip: aarch64 or ppc64le or arm64
 
@@ -32,17 +38,23 @@ requirements:
     - ${{ stdlib('c') }}
     - gmp
     - libffi
-    - perl
+    - perl 5.32.1.*
 
     - if: linux
       then:
         - ncurses <6,>=5
+        - patchelf
+
+    - if: linux
+      then:
+        - ncurses <6,>=5
+        - patchelf
 
     - if: unix
       then:
+        - coreutils
         - file
         - make
-        - patchelf
         - pkg-config
       else:
         - binutils
@@ -88,6 +100,11 @@ tests:
             - ghc-bootstrap/lib/private/libncurses.so.5
             - ghc-bootstrap/lib/private/libtinfo.so.5
             - ghc-bootstrap/lib/private/libtinfow.so.5
+            - ghc-bootstrap/lib/private/ld-2.17.so
+        
+        - if: osx
+          then:
+            - ghc-bootstrap/lib/private/libiconv.2.tbd
         
         - if: unix
           then:
