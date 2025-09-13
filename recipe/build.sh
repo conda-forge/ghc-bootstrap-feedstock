@@ -23,7 +23,7 @@ update_settings() {
     
     # Fixing the sysroot
     compiling="--sysroot=\\\$topdir/../../../../x86_64-conda-linux-gnu/sysroot"
-    compiling="${compiling} -isystem \\\$topdir/../../../../x86_64-conda-linux-gnu/sysroot/usr/include -D_GNU_SOURCE"
+    compiling="${compiling} -isystem=\\\$topdir/../../../../x86_64-conda-linux-gnu/sysroot/usr/include -D_GNU_SOURCE"
     
     clang_linking="--sysroot=\\\$topdir/../../../../x86_64-conda-linux-gnu/sysroot"
     clang_linking="${clang_linking} -Wl,-L\\\$topdir/../../../../x86_64-conda-linux-gnu/sysroot/lib64"
