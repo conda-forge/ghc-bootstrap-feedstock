@@ -1,5 +1,5 @@
 context:
-  version: "9.6.7"
+  version: "9.8.4"
 
 package:
   name: ghc-bootstrap
@@ -9,15 +9,15 @@ source:
   - if: osx
     then:
       url: https://downloads.haskell.org/~ghc/${{ version }}/ghc-${{ version }}-x86_64-apple-darwin.tar.xz
-      sha256: f14fcb0b9be4ae7f6d71f4069cccecb9dce2c8c39a8596afde7e5de171ca03e5
+      sha256: de7baacfb1513ab0e4ccf8911045cceee84bc8a4e39b89bd975ed3135e5f7d96
   - if: linux
     then:
       url: https://downloads.haskell.org/~ghc/${{ version }}/ghc-${{ version }}-x86_64-centos7-linux.tar.xz
-      sha256: 0047e4820cac57bcb51f2d3bbdade455ee12e190df3af7ba15654e87752b89e1
+      sha256: d2f2da6e93ceaa45a1c820720f75b0d06f624aed2377cc777366be8449dbd17f
   - if: not unix
     then:
       url: https://downloads.haskell.org/~ghc/${{ version }}/ghc-${{ version }}-x86_64-unknown-mingw32.tar.xz
-      sha256: cf0e736ce4c875de0296426ee575eca177acf6b9b5c1dd4881b9fc79681e1d5f
+      sha256: 184c9184d6439f1da8bca0214011ef6074fb5946eaa5840dc0c3e884515d7c52
       target_directory: bootstrap-ghc
 
 build:
