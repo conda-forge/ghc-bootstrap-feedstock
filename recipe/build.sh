@@ -99,7 +99,6 @@ update_settings() {
 
 fine_tune_linux_rpaths() {
   # Fine-tune RPATHs
-#    "${PREFIX}"/ghc-bootstrap/lib/ghc-"${PKG_VERSION}"/lib/x86_64-linux-ghc-"${PKG_VERSION}" \
   for dir in \
     "${PREFIX}"/ghc-bootstrap/bin \
     "${PREFIX}"/ghc-bootstrap/lib/ghc-"${PKG_VERSION}"/bin \
@@ -178,8 +177,6 @@ fine_tune_linux_rpaths() {
           # Anchor interpreter to the versionned loader
           echo -n ":"
           patchelf --set-interpreter "${PREFIX}/ghc-bootstrap/lib/private/ld-2.17.so" "${binary}" && echo -n "*"
-          # patchelf --set-interpreter "" "${binary}" && echo "*"
-          # patchelf --set-interpreter "/lib64/ld-linux-x86-64.so.2" "${binary}" && echo "*"
         fi
         echo -n "]"
       fi
