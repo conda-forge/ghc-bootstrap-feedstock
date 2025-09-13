@@ -198,9 +198,9 @@ if [[ ! -d bootstrap-ghc ]]; then
   # Correct the libc.so script to avoid trying to load /lib64/libc.so.6
   if [[ "${target_platform}" == "linux-"* ]]; then
     sysroot_libc_script="${BUILD_PREFIX}/x86_64-conda-linux-gnu/sysroot/usr/lib64/libc.so"
-    perl -i "s|/lib64/libc.so.6|libc.so.6|g" "$sysroot_libc_script"
-    perl -i "s|/usr/lib64/libc_nonshared.a|libc_nonshared.a|g" "$sysroot_libc_script"
-    perl -i "s|/lib64/ld-linux-x86-64.so.2|ld-2.17.so|g" "$sysroot_libc_script"
+    perl -i -pe "s|/lib64/libc.so.6|libc.so.6|g" "$sysroot_libc_script"
+    perl -i -pe "s|/usr/lib64/libc_nonshared.a|libc_nonshared.a|g" "$sysroot_libc_script"
+    perl -i -pe "s|/lib64/ld-linux-x86-64.so.2|ld-2.17.so|g" "$sysroot_libc_script"
   fi
   
   echo "Configuring ..."
@@ -226,17 +226,17 @@ if [[ ! -d bootstrap-ghc ]]; then
   # Update the installed settings file (find custom libraries, set sysroot, ...)
   update_settings
 
-  # --- Mock PREFIX-installed sysroot for fine-tuning of RPATHs
-  mkdir -p "${PREFIX}"/x86_64-conda-linux-gnu/{sysroot,lib}
-  cp -r "${BUILD_PREFIX}"/x86_64-conda-linux-gnu/sysroot "${PREFIX}"/x86_64-conda-linux-gnu
-  cp -r "${BUILD_PREFIX}"/x86_64-conda-linux-gnu/lib/libgcc_s* "${PREFIX}"/x86_64-conda-linux-gnu/lib
-  
   if [[ "${target_platform}" == "osx-"* ]]; then
     # We need SDK iconv, but settings file does not expand ${SDKROOT}, so some build could fail when
     # the hard-coded SDKROOT changes (new version) in the future for building other packages
     mkdir -p "${PREFIX}"/ghc-bootstrap/lib/private
     cp ${SDKROOT}/usr/lib/libiconv.2.tbd "${PREFIX}"/ghc-bootstrap/lib/private/ 2>/dev/null || true
   elif [[ "${target_platform}" == "linux-"* ]]; then
+    # --- Mock PREFIX-installed sysroot for fine-tuning of RPATHs
+    mkdir -p "${PREFIX}"/x86_64-conda-linux-gnu/{sysroot,lib}
+    cp -r "${BUILD_PREFIX}"/x86_64-conda-linux-gnu/sysroot "${PREFIX}"/x86_64-conda-linux-gnu
+    cp -r "${BUILD_PREFIX}"/x86_64-conda-linux-gnu/lib/libgcc_s* "${PREFIX}"/x86_64-conda-linux-gnu/lib
+ 
     # Copy ncurses 5 shared libraries to private location
     echo "Bundling ncurses 5 libraries privately"
     mkdir -p "${PREFIX}"/ghc-bootstrap/lib/private
@@ -249,20 +249,21 @@ if [[ ! -d bootstrap-ghc ]]; then
     
     # Fine tune RPATHs
     fine_tune_linux_rpaths
-  fi
 
-  # Verify sysroot compatibility
-  echo "Verify sysroot compatibility"
-  "${PREFIX}"/ghc-bootstrap/bin/ghc-pkg recache
-  printf 'import System.Posix.Signals\nmain = installHandler sigTERM Default Nothing >> putStrLn "Signal test"\n' > signal_test.hs
-  "${PREFIX}"/ghc-bootstrap/bin/ghc signal_test.hs 2>/dev/null || exit 1
-  if [[ -f ./signal_test ]] && ./signal_test; then
-    echo "Signal test passed"
-  else
-    echo "Signal test failed with exit code $?"
-    exit 1
+    # Verify sysroot compatibility
+    echo "Verify sysroot compatibility"
+    "${PREFIX}"/ghc-bootstrap/bin/ghc-pkg recache
+    printf 'import System.Posix.Signals\nmain = installHandler sigTERM Default Nothing >> putStrLn "Signal test"\n' > signal_test.hs
+    "${PREFIX}"/ghc-bootstrap/bin/ghc signal_test.hs 2>/dev/null || exit 1
+    if [[ -f ./signal_test ]] && ./signal_test; then
+      echo "Signal test passed"
+    else
+      echo "Signal test failed with exit code $?"
+      exit 1
+    fi
+  
+    rm -rf "${PREFIX}"/x86_64-conda-linux-gnu
   fi
-  rm -rf "${PREFIX}"/x86_64-conda-linux-gnu
   
   # Reduce footprint
   rm -rf "${PREFIX}"/ghc-bootstrap/share/doc/ghc-"${PKG_VERSION}"/html
