@@ -43,6 +43,10 @@ requirements:
         - ncurses <6,>=5
         - patchelf
 
+    - if: linux
+      then:
+        - ncurses <6,>=5
+
     - if: unix
       then:
         - coreutils
@@ -170,7 +174,7 @@ tests:
 about:
   homepage: https://haskell.org/ghc/
   license: BSD-3-Clause
-  license_file: LICENSE.txt
+  license_file: license_files/
   summary: Glorious Glasgow Haskell Compilation System
   description: |
     GHC is a state-of-the-art, open source, compiler and interactive environment 
