@@ -38,8 +38,6 @@ requirements:
     - ${{ compiler('c') }}
     - ${{ compiler('cxx') }}
     - ${{ stdlib('c') }}
-    - gmp
-    - libffi
     - perl 5.32.1.*
 
     - if: linux
@@ -63,9 +61,8 @@ requirements:
         - m2-tar
         - m2-which
   host:
-    - if: linux
-      then:
-        - gmp
+    - gmp
+    - libffi
     - if: not unix
       then: binutils
     
