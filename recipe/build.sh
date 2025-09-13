@@ -12,7 +12,7 @@ update_settings() {
 
     if [[ -n "${SDKROOT}" ]] && [[ -f "${SDKROOT}/usr/lib/libiconv.2.tbd" ]]; then
       # For 9.6.7, we need the SDK iconv, the problem is that settings does not expand variables, so we need a predictable path
-      perl -i -pe 's#("C compiler link flags", ")([^"]*)"#\1\2 $topdir/../../../../ghc-bootstrap/lib/private/libiconv.2.tbd -L$topdir/../../../../ghc-bootstrap/lib/private"#g' "${settings_file}"
+      perl -i -pe 's#("C compiler link flags", ")([^"]*)"#\1\2 \$topdir/../../../../ghc-bootstrap/lib/private/libiconv.2.tbd -L$topdir/../../../../ghc-bootstrap/lib/private"#g' "${settings_file}"
     fi
     
   elif [[ "${target_platform}" == "linux-"* ]]; then
