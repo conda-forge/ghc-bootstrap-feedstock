@@ -23,7 +23,7 @@ source:
       target_directory: bootstrap-ghc
 
 build:
-  number: 2
+  number: 3
   dynamic_linking:
     binary_relocation:
       - ghc-bootstrap/lib/${{ version }}/bin/*
