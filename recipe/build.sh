@@ -25,7 +25,7 @@ update_settings() {
     compiling="--sysroot=\\\$topdir/../../../../x86_64-conda-linux-gnu/sysroot"
     compiling="${compiling} -isystem \\\$topdir/../../../../x86_64-conda-linux-gnu/sysroot/usr/include -D_GNU_SOURCE"
     
-    clang_linking="-v --sysroot=\\\$topdir/../../../../x86_64-conda-linux-gnu/sysroot"
+    clang_linking="--sysroot=\\\$topdir/../../../../x86_64-conda-linux-gnu/sysroot"
     clang_linking="${clang_linking} -Wl,-L\\\$topdir/../../../../x86_64-conda-linux-gnu/sysroot/lib64"
     clang_linking="${clang_linking} -Wl,-L\\\$topdir/../../../../x86_64-conda-linux-gnu/sysroot/usr/lib64"
     clang_linking="${clang_linking} -Wl,-L\\\$topdir/../../../../x86_64-conda-linux-gnu/lib"
@@ -41,7 +41,7 @@ update_settings() {
     clang_linking="${clang_linking} -Wl,--dynamic-linker,\\\$topdir/../../../../x86_64-conda-linux-gnu/sysroot/lib64/ld-2.17.so"
     clang_linking="${clang_linking} -Wl,--disable-new-dtags"
     
-    ld_linking="-v --sysroot=\\\$topdir/../../../../x86_64-conda-linux-gnu/sysroot"
+    ld_linking="--sysroot=\\\$topdir/../../../../x86_64-conda-linux-gnu/sysroot"
     ld_linking="${ld_linking} -L\\\$topdir/../../../../x86_64-conda-linux-gnu/sysroot/lib64"
     ld_linking="${ld_linking} -L\\\$topdir/../../../../x86_64-conda-linux-gnu/sysroot/usr/lib64"
     ld_linking="${ld_linking} -L\\\$topdir/../../../../x86_64-conda-linux-gnu/lib"
