@@ -10,10 +10,11 @@ update_settings() {
     # Add system libs
     perl -i -pe 's#("C compiler link flags", ")([^"]*)"#\1\2 -L\$topdir/../../../../lib -Wl,-rpath,\$topdir/../../../../lib"#g' "${settings_file}"
 
-    if [[ -n "${SDKROOT}" ]] && [[ -f "${SDKROOT}/usr/lib/libiconv.2.tbd" ]]; then
-      # For 9.6.7, we need the SDK iconv, the problem is that settings does not expand variables, so we need a predictable path
-      perl -i -pe 's#("C compiler link flags", ")([^"]*)"#\1\2 \$topdir/../../../../ghc-bootstrap/lib/private/libiconv.2.tbd -L\$topdir/../../../../ghc-bootstrap/lib/private"#g' "${settings_file}"
-    fi
+    # WARNING: This breaks builds (Cabal) on system with different SDK versions - We need SDKROOT iconv
+    #   in cabal build, but settings does not expand env vars - It seems only a build-side addition will work
+    # if [[ -n "${SDKROOT}" ]] && [[ -f "${SDKROOT}/usr/lib/libiconv.2.tbd" ]]; then
+    #   perl -i -pe 's#("C compiler link flags", ")([^"]*)"#\1\2 \$topdir/../../../../ghc-bootstrap/lib/private/libiconv.2.tbd -L\$topdir/../../../../ghc-bootstrap/lib/private"#g' "${settings_file}"
+    # fi
     
   elif [[ "${target_platform}" == "linux-"* ]]; then
     settings_file="${PREFIX}"/ghc-bootstrap/lib/ghc-"${PKG_VERSION}"/lib/settings
@@ -210,8 +211,9 @@ if [[ ! -d bootstrap-ghc ]]; then
   if [[ "${target_platform}" == "osx-"* ]]; then
     # We need SDK iconv, but settings file does not expand ${SDKROOT}, so some build could fail when
     # the hard-coded SDKROOT changes (new version) in the future for building other packages
-    mkdir -p "${PREFIX}"/ghc-bootstrap/lib/private
-    cp ${SDKROOT}/usr/lib/libiconv.2.tbd "${PREFIX}"/ghc-bootstrap/lib/private/ 2>/dev/null || true
+    echo "Not bundling potentially incompatible iconv (needs to be done build-side (cabal)"
+    # mkdir -p "${PREFIX}"/ghc-bootstrap/lib/private
+    # cp ${SDKROOT}/usr/lib/libiconv.2.tbd "${PREFIX}"/ghc-bootstrap/lib/private/ 2>/dev/null || true
   elif [[ "${target_platform}" == "linux-"* ]]; then
     # --- Mock PREFIX-installed sysroot for fine-tuning of RPATHs
     mkdir -p "${PREFIX}"/x86_64-conda-linux-gnu/{sysroot,lib}
