@@ -7,15 +7,9 @@ update_settings() {
   
     # On occasion, the build_prefix was hardcoded
     perl -i -pe 's#($ENV{BUILD_PREFIX}|$ENV{PREFIX})/bin/##' "${settings_file}"
-    # Add system libs
+    # Add PREFIX conda libs
     perl -i -pe 's#("C compiler link flags", ")([^"]*)#\1\2 -L\$topdir/../../../../lib -Wl,-rpath,\$topdir/../../../../lib#g' "${settings_file}"
     perl -i -pe 's#("ld flags", ")([^"]*)#\1\2 -L\$topdir/../../../../lib#g' "${settings_file}"
-
-    # WARNING: This breaks builds (Cabal) on system with different SDK versions - We need SDKROOT iconv
-    #   in cabal build, but settings does not expand env vars - It seems only a build-side addition will work
-    # if [[ -n "${SDKROOT}" ]] && [[ -f "${SDKROOT}/usr/lib/libiconv.2.tbd" ]]; then
-    #   perl -i -pe 's#("C compiler link flags", ")([^"]*)"#\1\2 \$topdir/../../../../ghc-bootstrap/lib/private/libiconv.2.tbd -L\$topdir/../../../../ghc-bootstrap/lib/private"#g' "${settings_file}"
-    # fi
     
   elif [[ "${target_platform}" == "linux-"* ]]; then
     settings_file="${PREFIX}"/ghc-bootstrap/lib/ghc-"${PKG_VERSION}"/lib/settings

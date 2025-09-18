@@ -156,8 +156,7 @@ tests:
         then: |
           ${PREFIX}/ghc-bootstrap/bin/ghc signal_test.hs
           ./signal_test
-        else: |
-          echo Skipping signal test on Windows
+        else: echo Skipping signal test on Windows
     requirements:
       run:
         - ${{ compiler('c') }}
@@ -166,19 +165,16 @@ tests:
           then: binutils
 
   - script:
-      - printf 'import System.IO.Encoding\nmain = do\n  enc <- mkTextEncoding "UTF-8"\n  putStrLn $ "Encoding test: " ++ show enc\n' > iconv_test.hs
+      - printf 'import System.IO.Encoding\nmain = do\n  enc <- mkTextEncoding \"UTF-8\"\n  putStrLn $ \"Encoding test: \" ++ show enc\n' > iconv_test.hs
       - if: unix
         then: |
           ${PREFIX}/ghc-bootstrap/bin/ghc iconv_test.hs
           ./iconv_test
-        else: |
-          echo Skipping iconv test on Windows
+        else: echo Skipping iconv test on Windows
     requirements:
       run:
         - ${{ compiler('c') }}
         - ${{ stdlib('c') }}
-        - if: osx
-          then: libiconv
         - if: not unix
           then: binutils
 
