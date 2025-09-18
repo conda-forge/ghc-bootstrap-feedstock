@@ -139,7 +139,7 @@ tests:
           ${PREFIX}/ghc-bootstrap/bin/ghc testing/signal_test.hs -o signal_test && ./signal_test
           ${PREFIX}/ghc-bootstrap/bin/ghc testing/iconv_test.hs -o iconv_test && ./iconv_test
         else: |
-          CALL %PREFIX%\ghc-bootstrap\bin\ghc.exe "${RECIPE_DIR}"/testing/hello.hs -o hello.exe
+          CALL %PREFIX%\ghc-bootstrap\bin\ghc.exe testing/hello.hs -o hello.exe
           hello.exe
     files:
       recipe:
