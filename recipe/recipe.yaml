@@ -134,43 +134,17 @@ tests:
           then: binutils
 
   - script:
-      - printf 'main = putStrLn "Hello conda-forge"\n' > hello.hs
       - if: unix
         then: |
-          ${PREFIX}/ghc-bootstrap/bin/ghc hello.hs
-          ./hello
+          ${PREFIX}/ghc-bootstrap/bin/ghc testing/hello.hs -o hello && ./hello
+          ${PREFIX}/ghc-bootstrap/bin/ghc testing/signal_test.hs -o signal_test && ./signal_test
+          ${PREFIX}/ghc-bootstrap/bin/ghc testing/iconv_test.hs -o iconv_test && ./iconv_test
         else: |
-          echo main = putStrLn "Hello conda-forge" > hello.hs
-          CALL %PREFIX%\ghc-bootstrap\bin\ghc.exe hello.hs
+          CALL %PREFIX%\ghc-bootstrap\bin\ghc.exe "${RECIPE_DIR}"/testing/hello.hs -o hello.exe
           hello.exe
-    requirements:
-      run:
-        - ${{ compiler('c') }}
-        - ${{ stdlib('c') }}
-        - if: not unix
-          then: binutils
-
-  - script:
-      - printf 'import System.Posix.Signals\nmain = installHandler sigTERM Default Nothing >> putStrLn "Signal test"\n' > signal_test.hs
-      - if: unix
-        then: |
-          ${PREFIX}/ghc-bootstrap/bin/ghc signal_test.hs
-          ./signal_test
-        else: echo Skipping signal test on Windows
-    requirements:
-      run:
-        - ${{ compiler('c') }}
-        - ${{ stdlib('c') }}
-        - if: not unix
-          then: binutils
-
-  - script:
-      - printf 'import System.IO.Encoding\nmain = do\n  enc <- mkTextEncoding \"UTF-8\"\n  putStrLn $ \"Encoding test: \" ++ show enc\n' > iconv_test.hs
-      - if: unix
-        then: |
-          ${PREFIX}/ghc-bootstrap/bin/ghc iconv_test.hs
-          ./iconv_test
-        else: echo Skipping iconv test on Windows
+    files:
+      recipe:
+        - testing/
     requirements:
       run:
         - ${{ compiler('c') }}
