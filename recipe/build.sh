@@ -8,9 +8,9 @@ update_settings() {
     # On occasion, the build_prefix was hardcoded
     perl -i -pe 's#($ENV{BUILD_PREFIX}|$ENV{PREFIX})/bin/##' "${settings_file}"
     # Add PREFIX conda libs
-    perl -i -pe 's#("C compiler link flags", ")([^"]*)#\1\2 -L\$topdir/../../../../lib -Wl,-rpath,\$topdir/../../../../lib -liconv#g' "${settings_file}"
-    perl -i -pe 's#("C\+\+ compiler link flags", ")([^"]*)#\1\2 -L\$topdir/../../../../lib -Wl,-rpath,\$topdir/../../../../lib -liconv#g' "${settings_file}"
-    perl -i -pe 's#("ld flags", ")([^"]*)#\1\2 -L\$topdir/../../../../lib -liconv#g' "${settings_file}"
+    perl -i -pe 's#("C compiler link flags", ")([^"]*)#\1\2 -L\$topdir/../../../../lib -Wl,-rpath,\$topdir/../../../../lib -Wl,-alias,_libiconv,_iconv -Wl,-alias,_libiconv_open,_iconv_open -Wl,-alias,_libiconv_close,_iconv_close -liconv#g' "${settings_file}"
+    perl -i -pe 's#("C\+\+ compiler link flags", ")([^"]*)#\1\2 -L\$topdir/../../../../lib -Wl,-rpath,\$topdir/../../../../lib -Wl,-alias,_libiconv,_iconv -Wl,-alias,_libiconv_open,_iconv_open -Wl,-alias,_libiconv_close,_iconv_close -liconv#g' "${settings_file}"
+    perl -i -pe 's#("ld flags", ")([^"]*)#\1\2 -L\$topdir/../../../../lib -Wl,-alias,_libiconv,_iconv -Wl,-alias,_libiconv_open,_iconv_open -Wl,-alias,_libiconv_close,_iconv_close -liconv#g' "${settings_file}"
     
   elif [[ "${target_platform}" == "linux-"* ]]; then
     settings_file="${PREFIX}"/ghc-bootstrap/lib/ghc-"${PKG_VERSION}"/lib/settings
