@@ -61,8 +61,7 @@ requirements:
   host:
     - gmp
     - libffi
-    - if: osx
-      then: libiconv
+    - libiconv
     - if: not unix
       then: binutils
     
