@@ -135,9 +135,11 @@ tests:
   - script:
       - if: unix
         then: |
-          ${PREFIX}/ghc-bootstrap/bin/ghc -v testing/hello.hs -o hello && ./hello
-          ${PREFIX}/ghc-bootstrap/bin/ghc -v testing/signal_test.hs -o signal_test && ./signal_test
+          ${PREFIX}/ghc-bootstrap/bin/ghc testing/hello.hs -o hello && ./hello
+          ${PREFIX}/ghc-bootstrap/bin/ghc testing/signal_test.hs -o signal_test && ./signal_test
           ${PREFIX}/ghc-bootstrap/bin/ghc -v testing/iconv_test.hs -o iconv_test && ./iconv_test
+          otool -t $PREFIX/lib/libiconv.dylib | grep iconv
+          otool -t /usr/lib/libiconv.dylib | grep iconv
         else: |
           CALL %PREFIX%\ghc-bootstrap\bin\ghc.exe testing/hello.hs -o hello.exe
           hello.exe
