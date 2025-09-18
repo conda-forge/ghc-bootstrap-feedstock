@@ -8,7 +8,8 @@ update_settings() {
     # On occasion, the build_prefix was hardcoded
     perl -i -pe 's#($ENV{BUILD_PREFIX}|$ENV{PREFIX})/bin/##' "${settings_file}"
     # Add system libs
-    perl -i -pe 's#("C compiler link flags", ")([^"]*)"#\1\2 -L\$topdir/../../../../lib -Wl,-rpath,\$topdir/../../../../lib"#g' "${settings_file}"
+    perl -i -pe 's#("C compiler link flags", ")([^"]*)#\1\2 -L\$topdir/../../../../lib -Wl,-rpath,\$topdir/../../../../lib#g' "${settings_file}"
+    perl -i -pe 's#("ld flags", ")([^"]*)#\1\2 -L\$topdir/../../../../lib#g' "${settings_file}"
 
     # WARNING: This breaks builds (Cabal) on system with different SDK versions - We need SDKROOT iconv
     #   in cabal build, but settings does not expand env vars - It seems only a build-side addition will work

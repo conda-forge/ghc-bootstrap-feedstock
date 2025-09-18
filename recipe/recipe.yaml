@@ -61,6 +61,8 @@ requirements:
   host:
     - gmp
     - libffi
+    - if: osx
+      then: libiconv
     - if: not unix
       then: binutils
     
@@ -160,6 +162,23 @@ tests:
       run:
         - ${{ compiler('c') }}
         - ${{ stdlib('c') }}
+        - if: not unix
+          then: binutils
+
+  - script:
+      - printf 'import System.IO.Encoding\nmain = do\n  enc <- mkTextEncoding "UTF-8"\n  putStrLn $ "Encoding test: " ++ show enc\n' > iconv_test.hs
+      - if: unix
+        then: |
+          ${PREFIX}/ghc-bootstrap/bin/ghc iconv_test.hs
+          ./iconv_test
+        else: |
+          echo Skipping iconv test on Windows
+    requirements:
+      run:
+        - ${{ compiler('c') }}
+        - ${{ stdlib('c') }}
+        - if: osx
+          then: libiconv
         - if: not unix
           then: binutils
 
