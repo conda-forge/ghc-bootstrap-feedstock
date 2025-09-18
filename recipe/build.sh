@@ -9,6 +9,7 @@ update_settings() {
     perl -i -pe 's#($ENV{BUILD_PREFIX}|$ENV{PREFIX})/bin/##' "${settings_file}"
     # Add PREFIX conda libs
     perl -i -pe 's#("C compiler link flags", ")([^"]*)#\1\2 -L\$topdir/../../../../lib -Wl,-rpath,\$topdir/../../../../lib -liconv#g' "${settings_file}"
+    perl -i -pe 's#("C\+\+ compiler link flags", ")([^"]*)#\1\2 -L\$topdir/../../../../lib -Wl,-rpath,\$topdir/../../../../lib -liconv#g' "${settings_file}"
     perl -i -pe 's#("ld flags", ")([^"]*)#\1\2 -L\$topdir/../../../../lib -liconv#g' "${settings_file}"
     
   elif [[ "${target_platform}" == "linux-"* ]]; then
