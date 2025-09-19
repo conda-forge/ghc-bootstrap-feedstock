@@ -207,13 +207,7 @@ if [[ ! -d bootstrap-ghc ]]; then
   # Update the installed settings file (find custom libraries, set sysroot, ...)
   update_settings
 
-  if [[ "${target_platform}" == "osx-"* ]]; then
-    # We need SDK iconv, but settings file does not expand ${SDKROOT}, so some build could fail when
-    # the hard-coded SDKROOT changes (new version) in the future for building other packages
-    echo "Not bundling potentially incompatible iconv (needs to be done build-side (cabal)"
-    # mkdir -p "${PREFIX}"/ghc-bootstrap/lib/private
-    # cp ${SDKROOT}/usr/lib/libiconv.2.tbd "${PREFIX}"/ghc-bootstrap/lib/private/ 2>/dev/null || true
-  elif [[ "${target_platform}" == "linux-"* ]]; then
+  if [[ "${target_platform}" == "linux-"* ]]; then
     # --- Mock PREFIX-installed sysroot for fine-tuning of RPATHs
     mkdir -p "${PREFIX}"/x86_64-conda-linux-gnu/{sysroot,lib}
     cp -r "${BUILD_PREFIX}"/x86_64-conda-linux-gnu/sysroot "${PREFIX}"/x86_64-conda-linux-gnu
@@ -221,11 +215,11 @@ if [[ ! -d bootstrap-ghc ]]; then
 
     # Copy ncurses 5 shared libraries to private location
     echo "Bundling ncurses 5 libraries privately"
-    # mkdir -p "${PREFIX}"/ghc-bootstrap/lib/private
-    # cp "${BUILD_PREFIX}"/lib/libncurses.so.5* "${PREFIX}"/ghc-bootstrap/lib/private/ 2>/dev/null || true
-    # cp "${BUILD_PREFIX}"/lib/libtinfo.so.5* "${PREFIX}"/ghc-bootstrap/lib/private/ 2>/dev/null || true
-    # cp "${BUILD_PREFIX}"/lib/libtinfow.so.5* "${PREFIX}"/ghc-bootstrap/lib/private/ 2>/dev/null || true
-    
+    mkdir -p "${PREFIX}"/ghc-bootstrap/lib/private
+    cp "${BUILD_PREFIX}"/lib/libncurses.so.5* "${PREFIX}"/ghc-bootstrap/lib/private/ 2>/dev/null || true
+    cp "${BUILD_PREFIX}"/lib/libtinfo.so.5* "${PREFIX}"/ghc-bootstrap/lib/private/ 2>/dev/null || true
+    cp "${BUILD_PREFIX}"/lib/libtinfow.so.5* "${PREFIX}"/ghc-bootstrap/lib/private/ 2>/dev/null || true
+
     # We seem to have an issue with using a loader different than 2.17 for ghc-pkg
     cp "${BUILD_PREFIX}"/x86_64-conda-linux-gnu/sysroot/lib64/ld-2.17.so* "${PREFIX}"/ghc-bootstrap/lib/private/ 2>/dev/null || true
     

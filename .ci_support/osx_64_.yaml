@@ -22,6 +22,8 @@ gmp:
 - '6'
 libffi:
 - '3.4'
+libiconv:
+- '1'
 macos_machine:
 - x86_64-apple-darwin13.4.0
 target_platform:
