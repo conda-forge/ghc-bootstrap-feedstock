@@ -4,16 +4,16 @@ set -eu
 update_settings() {
   if [[ "${target_platform}" == "osx-"* ]]; then
     settings_file="${PREFIX}"/ghc-bootstrap/lib/ghc-"${PKG_VERSION}"/lib/settings
-  
+    iconv_aliases="-Wl,-alias,_libiconv,_iconv"
+    iconv_aliases="${iconv_aliases} -Wl,-alias,_libiconv_open,_iconv_open"
+    iconv_aliases="${iconv_aliases} -Wl,-alias,_libiconv_close,_iconv_close"
+
     # On occasion, the build_prefix was hardcoded
     perl -i -pe 's#($ENV{BUILD_PREFIX}|$ENV{PREFIX})/bin/##' "${settings_file}"
-    # Add system libs
-    perl -i -pe 's#("C compiler link flags", ")([^"]*)"#\1\2 -L\$topdir/../../../../lib -Wl,-rpath,\$topdir/../../../../lib"#g' "${settings_file}"
-
-    if [[ -n "${SDKROOT}" ]] && [[ -f "${SDKROOT}/usr/lib/libiconv.2.tbd" ]]; then
-      # For 9.6.7, we need the SDK iconv, the problem is that settings does not expand variables, so we need a predictable path
-      perl -i -pe 's#("C compiler link flags", ")([^"]*)"#\1\2 \$topdir/../../../../ghc-bootstrap/lib/private/libiconv.2.tbd -L\$topdir/../../../../ghc-bootstrap/lib/private"#g' "${settings_file}"
-    fi
+    # Add PREFIX conda libs
+    perl -i -pe "s#(C compiler link flags\", \")([^\"]*)#\1\2 -L\$topdir/../../../../lib -Wl,-rpath,\$topdir/../../../../lib ${iconv_aliases} -liconv#" "${settings_file}"
+    perl -i -pe "s#(C\+\+ compiler link flags\", \")([^\"]*)#\1\2 -L\$topdir/../../../../lib -Wl,-rpath,\$topdir/../../../../lib ${iconv_aliases} -liconv#" "${settings_file}"
+    perl -i -pe "s#(ld flags\", \")([^\"]*)#\1\2 -L\$topdir/../../../../lib ${iconv_aliases} -liconv#" "${settings_file}"
     
   elif [[ "${target_platform}" == "linux-"* ]]; then
     settings_file="${PREFIX}"/ghc-bootstrap/lib/ghc-"${PKG_VERSION}"/lib/settings
@@ -210,8 +210,9 @@ if [[ ! -d bootstrap-ghc ]]; then
   if [[ "${target_platform}" == "osx-"* ]]; then
     # We need SDK iconv, but settings file does not expand ${SDKROOT}, so some build could fail when
     # the hard-coded SDKROOT changes (new version) in the future for building other packages
-    mkdir -p "${PREFIX}"/ghc-bootstrap/lib/private
-    cp ${SDKROOT}/usr/lib/libiconv.2.tbd "${PREFIX}"/ghc-bootstrap/lib/private/ 2>/dev/null || true
+    echo "Not bundling potentially incompatible iconv (needs to be done build-side (cabal)"
+    # mkdir -p "${PREFIX}"/ghc-bootstrap/lib/private
+    # cp ${SDKROOT}/usr/lib/libiconv.2.tbd "${PREFIX}"/ghc-bootstrap/lib/private/ 2>/dev/null || true
   elif [[ "${target_platform}" == "linux-"* ]]; then
     # --- Mock PREFIX-installed sysroot for fine-tuning of RPATHs
     mkdir -p "${PREFIX}"/x86_64-conda-linux-gnu/{sysroot,lib}
@@ -283,28 +284,30 @@ mkdir -p "${PREFIX}/etc/conda/activate.d"
 cp "${RECIPE_DIR}/activate.sh" "${PREFIX}/etc/conda/activate.d/${PKG_NAME}_activate.sh"
 
 # Add package licenses
-mkdir -p "${SRC_DIR}"/license_files
-arch="-${target_platform#*-}"
-arch="${arch//-64/-x86_64}"
-arch="${arch#*-}"
-arch="${arch//arm64/aarch64}"
-os=${target_platform%%-*}
-os="${os//win/windows}"
-if [[ "${target_platform}" == "linux-"* ]] || [[ "${target_platform}" == "osx-"* ]]; then
-  share="share"
-else
-  share="lib"
-fi
-license_files_dir=$(find "${PREFIX}"/ghc-bootstrap/"${share}"/doc -name "${arch}-${os}-ghc-${PKG_VERSION}*" -type d | head -n 1)
-
-echo "License files directory: ${license_files_dir}"
-for pkg in $(find "${PREFIX}"/ghc-bootstrap/lib -name '*.conf' -print0 | env -i PATH="$PATH" xargs -0 grep -l '^license:' | sort -u); do
-  pkg_name=$(basename "${pkg}" .conf)
-  pkg_name=${pkg_name%-*}
-  license_file=$(find "${license_files_dir}/${pkg_name}" -name LICENSE | head -n 1)
-  if [[ -f "${license_file}" ]]; then
-    echo -n "."
-    cp "${license_file}" "${SRC_DIR}"/license_files/"${pkg_name}"-LICENSE
+if [[ "${PKG_VERSION}" != "9.6.7" ]]; then
+  mkdir -p "${SRC_DIR}"/license_files
+  arch="-${target_platform#*-}"
+  arch="${arch//-64/-x86_64}"
+  arch="${arch#*-}"
+  arch="${arch//arm64/aarch64}"
+  os=${target_platform%%-*}
+  os="${os//win/windows}"
+  if [[ "${target_platform}" == "linux-"* ]] || [[ "${target_platform}" == "osx-"* ]]; then
+    share="share"
+  else
+    share="lib"
   fi
-done
-echo " done"
+  license_files_dir=$(find "${PREFIX}"/ghc-bootstrap/"${share}"/doc -name "${arch}-${os}-ghc-${PKG_VERSION}*" -type d | head -n 1)
+
+  echo "License files directory: ${license_files_dir}"
+  for pkg in $(find "${PREFIX}"/ghc-bootstrap/lib -name '*.conf' -print0 | env -i PATH="$PATH" xargs -0 grep -l '^license:' | sort -u); do
+    pkg_name=$(basename "${pkg}" .conf)
+    pkg_name=${pkg_name%-*}
+    license_file=$(find "${license_files_dir}/${pkg_name}" -name LICENSE | head -n 1)
+    if [[ -f "${license_file}" ]]; then
+      echo -n "."
+      cp "${license_file}" "${SRC_DIR}"/license_files/"${pkg_name}"-LICENSE
+    fi
+  done
+  echo " done"
+fi

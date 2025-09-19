@@ -61,6 +61,7 @@ requirements:
   host:
     - gmp
     - libffi
+    - libiconv
     - if: not unix
       then: binutils
     
@@ -93,11 +94,7 @@ tests:
             - ghc-bootstrap/lib/private/libtinfo.so.5
             - ghc-bootstrap/lib/private/libtinfow.so.5
             - ghc-bootstrap/lib/private/ld-2.17.so
-        
-        - if: osx
-          then:
-            - ghc-bootstrap/lib/private/libiconv.2.tbd
-        
+
         - if: unix
           then:
             - ghc-bootstrap/lib/ghc-${{ version }}/lib/settings
@@ -136,30 +133,17 @@ tests:
           then: binutils
 
   - script:
-      - printf 'main = putStrLn "Hello conda-forge"\n' > hello.hs
       - if: unix
         then: |
-          ${PREFIX}/ghc-bootstrap/bin/ghc hello.hs
-          ./hello
+          ${PREFIX}/ghc-bootstrap/bin/ghc testing/hello.hs -o hello && ./hello
+          ${PREFIX}/ghc-bootstrap/bin/ghc testing/signal_test.hs -o signal_test && ./signal_test
+          ${PREFIX}/ghc-bootstrap/bin/ghc testing/iconv_test.hs -o iconv_test && ./iconv_test
         else: |
-          echo main = putStrLn "Hello conda-forge" > hello.hs
-          CALL %PREFIX%\ghc-bootstrap\bin\ghc.exe hello.hs
+          CALL %PREFIX%\ghc-bootstrap\bin\ghc.exe testing/hello.hs -o hello.exe
           hello.exe
-    requirements:
-      run:
-        - ${{ compiler('c') }}
-        - ${{ stdlib('c') }}
-        - if: not unix
-          then: binutils
-
-  - script:
-      - printf 'import System.Posix.Signals\nmain = installHandler sigTERM Default Nothing >> putStrLn "Signal test"\n' > signal_test.hs
-      - if: unix
-        then: |
-          ${PREFIX}/ghc-bootstrap/bin/ghc signal_test.hs
-          ./signal_test
-        else: |
-          echo Skipping signal test on Windows
+    files:
+      recipe:
+        - testing/
     requirements:
       run:
         - ${{ compiler('c') }}
