@@ -138,10 +138,6 @@ tests:
           ${PREFIX}/ghc-bootstrap/bin/ghc testing/hello.hs -o hello && ./hello
           ${PREFIX}/ghc-bootstrap/bin/ghc testing/signal_test.hs -o signal_test && ./signal_test
           ${PREFIX}/ghc-bootstrap/bin/ghc -v testing/iconv_test.hs -o iconv_test && ./iconv_test
-          otool -L ${PREFIX}/lib/libiconv.dylib
-          nm -gU ${PREFIX}/lib/libiconv.dylib | grep iconv
-          nm -u $PREFIX/ghc-bootstrap/lib/ghc-9.6.7/lib/x86_64-osx-ghc-9.6.7/base-4.18.3.0/libHSbase-4.18.3.0.a | grep iconv
-          nm -g $PREFIX/lib/libiconv.dylib | grep -E "(iconv|conv)" | head -10
           
         else: |
           CALL %PREFIX%\ghc-bootstrap\bin\ghc.exe testing/hello.hs -o hello.exe

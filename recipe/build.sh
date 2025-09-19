@@ -7,7 +7,6 @@ update_settings() {
     iconv_aliases="-Wl,-alias,_libiconv,_iconv"
     iconv_aliases="${iconv_aliases} -Wl,-alias,_libiconv_open,_iconv_open"
     iconv_aliases="${iconv_aliases} -Wl,-alias,_libiconv_close,_iconv_close"
-    iconv_aliases="${iconv_aliases} -Wl,-alias,_libiconv_canonicalize,_iconv_canonicalize"
   
     # On occasion, the build_prefix was hardcoded
     perl -i -pe 's#($ENV{BUILD_PREFIX}|$ENV{PREFIX})/bin/##' "${settings_file}"
