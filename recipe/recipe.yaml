@@ -12,8 +12,8 @@ source:
       sha256: e7a40e39059dd3619d7884b7382f357e79a0f4e430181b805bdd57b3be9a7300
   - if: linux
     then:
-      url: https://downloads.haskell.org/~ghc/${{ version }}/ghc-${{ version }}-x86_64-ubuntu20_04-linux.tar.xz
-      sha256: 0cffff0a74131465bb5d1447400ea46080a10e3cd46d6c9559aa6f2a6a7537ac
+      url: https://downloads.haskell.org/~ghc/${{ version }}/ghc-${{ version }}-x86_64-deb9-linux.tar.xz
+      sha256: 5dcb17f43de256ff651ebfd23f49bb2657543386d2a43257f255bde24ff78e39
   - if: not unix
     then:
       url: https://downloads.haskell.org/~ghc/${{ version }}/ghc-${{ version }}-x86_64-unknown-mingw32.tar.xz
@@ -21,25 +21,33 @@ source:
       target_directory: bootstrap-ghc
 
 build:
-  number: 5
+  number: 6
+  dynamic_linking:
+    binary_relocation:
+      - ghc-bootstrap/lib/${{ version }}/bin/*
+  prefix_detection:
+    ignore:
+      - ghc-bootstrap/**/*.so
   # We will not need x-compiled ghc-bootstrap
-  skip: aarch64 or arm64
+  skip: aarch64 or ppc64le or arm64
 
 requirements:
   build:
     - ${{ compiler('c') }}
     - ${{ compiler('cxx') }}
     - ${{ stdlib('c') }}
-    - gmp
-    - libffi
-    - perl
+    - perl 5.32.1.*
+
+    - if: linux
+      then:
+        - ncurses <6,>=5
+        - patchelf
 
     - if: unix
       then:
+        - coreutils
         - file
         - make
-        - ncurses
-        - patchelf
         - pkg-config
       else:
         - binutils
@@ -51,20 +59,20 @@ requirements:
         - m2-tar
         - m2-which
   host:
-    - if: linux
-      then:
-        - gmp
-        - ncurses
+    - gmp
+    - libffi
+    - libiconv
     - if: not unix
       then: binutils
+    
 
 tests:
   - package_contents:
       files:
+        - ghc-bootstrap/bin/ghc${{ "" if unix else ".exe" }}
         - ghc-bootstrap/bin/ghc-${{ version }}${{ "" if unix else ".exe" }}
         - ghc-bootstrap/bin/ghc-pkg-${{ version }}${{ "" if unix else ".exe" }}
         - ghc-bootstrap/bin/ghc-pkg${{ "" if unix else ".exe" }}
-        - ghc-bootstrap/bin/ghc${{ "" if unix else ".exe" }}
         - ghc-bootstrap/bin/ghci-${{ version }}${{ "" if unix else ".exe" }}
         - ghc-bootstrap/bin/ghci${{ "" if unix else ".exe" }}
         - ghc-bootstrap/bin/haddock-ghc-${{ version }}${{ "" if unix else ".exe" }}
@@ -79,10 +87,16 @@ tests:
         - ghc-bootstrap/bin/runghc${{ "" if unix else ".exe" }}
         - ghc-bootstrap/bin/runhaskell-${{ version }}${{ "" if unix else ".exe" }}
         - ghc-bootstrap/bin/runhaskell${{ "" if unix else ".exe" }}
+        
+        - if: linux
+          then:
+            - ghc-bootstrap/lib/private/libncurses.so.5
+            - ghc-bootstrap/lib/private/libtinfo.so.5
+            - ghc-bootstrap/lib/private/libtinfow.so.5
+            - ghc-bootstrap/lib/private/ld-2.17.so
+
         - if: unix
           then:
-            - ghc-bootstrap/lib/ghc-${{ version }}/bin/ghc-toolchain-bin-ghc-${{ version }}${{ "" if unix else ".exe" }}
-            - ghc-bootstrap/lib/ghc-${{ version }}/bin/ghc-toolchain-bin${{ "" if unix else ".exe" }}
             - ghc-bootstrap/lib/ghc-${{ version }}/lib/settings
             - ghc-bootstrap/lib/ghc-${{ version }}/lib/package.conf.d/**
           else:
@@ -119,30 +133,17 @@ tests:
           then: binutils
 
   - script:
-      - printf 'main = putStrLn "Hello conda-forge"\n' > hello.hs
       - if: unix
         then: |
-          ${PREFIX}/ghc-bootstrap/bin/ghc hello.hs
-          ./hello
+          ${PREFIX}/ghc-bootstrap/bin/ghc testing/hello.hs -o hello && ./hello
+          ${PREFIX}/ghc-bootstrap/bin/ghc testing/signal_test.hs -o signal_test && ./signal_test
+          ${PREFIX}/ghc-bootstrap/bin/ghc testing/iconv_test.hs -o iconv_test && ./iconv_test
         else: |
-          echo main = putStrLn "Hello conda-forge" > hello.hs
-          CALL %PREFIX%\ghc-bootstrap\bin\ghc.exe hello.hs
+          CALL %PREFIX%\ghc-bootstrap\bin\ghc.exe testing/hello.hs -o hello.exe
           hello.exe
-    requirements:
-      run:
-        - ${{ compiler('c') }}
-        - ${{ stdlib('c') }}
-        - if: not unix
-          then: binutils
-
-  - script:
-      - printf 'import System.Posix.Signals\nmain = installHandler sigTERM Default Nothing >> putStrLn "Signal test"\n' > signal_test.hs
-      - if: unix
-        then: |
-          ${PREFIX}/ghc-bootstrap/bin/ghc signal_test.hs
-          ./signal_test
-        else: |
-          echo Skipping signal test on Windows
+    files:
+      recipe:
+        - testing/
     requirements:
       run:
         - ${{ compiler('c') }}
@@ -160,8 +161,8 @@ about:
     for the functional language Haskell.
     
     Conda-Forge Requirements:
-    - Linux: glibc >= 2.34, clang compiler
-    - macOS: macOS >= 11.0, clang compiler
+    - Linux: glibc >= 2.17, clang compiler
+    - macOS: macOS >= 10.13, clang compiler
     - Windows: MSYS2/MinGW toolchain, binutils
     Note: Windows builds may show overlinking warnings for system DLLs
     (SHLWAPI.dll, WSOCK32.dll, WINMM.dll). These are benign and don't
