@@ -10,10 +10,14 @@ update_settings() {
 
     # On occasion, the build_prefix was hardcoded
     perl -i -pe 's#($ENV{BUILD_PREFIX}|$ENV{PREFIX})/bin/##' "${settings_file}"
+
     # Add PREFIX conda libs
-    perl -i -pe "s#(C compiler link flags\", \")([^\"]*)#\1\2 -L\$topdir/../../../../lib -Wl,-rpath,\$topdir/../../../../lib ${iconv_aliases} -liconv#" "${settings_file}"
-    perl -i -pe "s#(C\+\+ compiler link flags\", \")([^\"]*)#\1\2 -L\$topdir/../../../../lib -Wl,-rpath,\$topdir/../../../../lib ${iconv_aliases} -liconv#" "${settings_file}"
-    perl -i -pe "s#(ld flags\", \")([^\"]*)#\1\2 -L\$topdir/../../../../lib ${iconv_aliases} -liconv#" "${settings_file}"
+    perl -i -pe "s#(C compiler link flags\", \")([^\"]*)#\1\2 -L\\\$topdir/../../../../lib -Wl,-rpath,\\\$topdir/../../../../lib ${iconv_aliases} -liconv#" "${settings_file}"
+    perl -i -pe "s#(ld flags\", \")([^\"]*)#\1\2 -L\\\$topdir/../../../../lib ${iconv_aliases} -liconv#" "${settings_file}"
+
+    # We seem to need the Apple ar/ranlib
+    perl -i -pe "s#(ar command\", \").*\"#\1/usr/bin/ar\"#" "${settings_file}"
+    perl -i -pe "s#(ranlib command\", \").*\"#\1/usr/bin/ranlib\"#" "${settings_file}"
 
   elif [[ "${target_platform}" == "linux-"* ]]; then
     settings_file="${PREFIX}"/ghc-bootstrap/lib/ghc-"${PKG_VERSION}"/lib/settings
@@ -125,8 +129,7 @@ fine_tune_linux_rpaths() {
               (cd "${base_dir}" && ls "${rpath_str}/${select_path}/${lib}" | grep -q "${lib}") && need_conda_lib=1
           elif select_path="ghc-bootstrap/lib/private" \
             && [[ -f "${PREFIX}/${select_path}/${lib}" ]]; then
-              # shellcheck disable=SC2086
-              (cd ${base_dir} && ls "${rpath_str}/${select_path}/${lib}" | grep -q "${lib}") && need_private=1
+               (cd "${base_dir}" && ls "${rpath_str}/${select_path}/${lib}" | grep -q "${lib}") && need_private=1
           elif select_path="ghc-bootstrap/lib/ghc-${PKG_VERSION}/lib/x86_64-linux-ghc-${PKG_VERSION}" \
             && [[ -f "${PREFIX}/${select_path}/${lib}" ]]; then
               (cd "${base_dir}" && ls "${rpath_str}/${select_path}/${lib}" | grep -q "${lib}") && need_haskell_lib=1
@@ -208,13 +211,7 @@ if [[ ! -d bootstrap-ghc ]]; then
   # Update the installed settings file (find custom libraries, set sysroot, ...)
   update_settings
 
-  if [[ "${target_platform}" == "osx-"* ]]; then
-    # We need SDK iconv, but settings file does not expand ${SDKROOT}, so some build could fail when
-    # the hard-coded SDKROOT changes (new version) in the future for building other packages
-    echo "Not bundling potentially incompatible iconv (needs to be done build-side (cabal)"
-    # mkdir -p "${PREFIX}"/ghc-bootstrap/lib/private
-    # cp ${SDKROOT}/usr/lib/libiconv.2.tbd "${PREFIX}"/ghc-bootstrap/lib/private/ 2>/dev/null || true
-  elif [[ "${target_platform}" == "linux-"* ]]; then
+  if [[ "${target_platform}" == "linux-"* ]]; then
     # --- Mock PREFIX-installed sysroot for fine-tuning of RPATHs
     mkdir -p "${PREFIX}"/x86_64-conda-linux-gnu/{sysroot,lib}
     cp -r "${BUILD_PREFIX}"/x86_64-conda-linux-gnu/sysroot "${PREFIX}"/x86_64-conda-linux-gnu
@@ -222,11 +219,11 @@ if [[ ! -d bootstrap-ghc ]]; then
 
     # Copy ncurses 5 shared libraries to private location
     echo "Bundling ncurses 5 libraries privately"
-    # mkdir -p "${PREFIX}"/ghc-bootstrap/lib/private
-    # cp "${BUILD_PREFIX}"/lib/libncurses.so.5* "${PREFIX}"/ghc-bootstrap/lib/private/ 2>/dev/null || true
-    # cp "${BUILD_PREFIX}"/lib/libtinfo.so.5* "${PREFIX}"/ghc-bootstrap/lib/private/ 2>/dev/null || true
-    # cp "${BUILD_PREFIX}"/lib/libtinfow.so.5* "${PREFIX}"/ghc-bootstrap/lib/private/ 2>/dev/null || true
-    
+    mkdir -p "${PREFIX}"/ghc-bootstrap/lib/private
+    cp "${BUILD_PREFIX}"/lib/libncurses.so.5* "${PREFIX}"/ghc-bootstrap/lib/private/ 2>/dev/null || true
+    cp "${BUILD_PREFIX}"/lib/libtinfo.so.5* "${PREFIX}"/ghc-bootstrap/lib/private/ 2>/dev/null || true
+    cp "${BUILD_PREFIX}"/lib/libtinfow.so.5* "${PREFIX}"/ghc-bootstrap/lib/private/ 2>/dev/null || true
+
     # We seem to have an issue with using a loader different than 2.17 for ghc-pkg
     cp "${BUILD_PREFIX}"/x86_64-conda-linux-gnu/sysroot/lib64/ld-2.17.so* "${PREFIX}"/ghc-bootstrap/lib/private/ 2>/dev/null || true
     

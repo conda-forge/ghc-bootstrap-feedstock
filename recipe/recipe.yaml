@@ -90,9 +90,9 @@ tests:
         
         - if: linux
           then:
-            # - ghc-bootstrap/lib/private/libncurses.so.5
-            # - ghc-bootstrap/lib/private/libtinfo.so.5
-            # - ghc-bootstrap/lib/private/libtinfow.so.5
+            - ghc-bootstrap/lib/private/libncurses.so.5
+            - ghc-bootstrap/lib/private/libtinfo.so.5
+            - ghc-bootstrap/lib/private/libtinfow.so.5
             - ghc-bootstrap/lib/private/ld-2.17.so
 
         - if: unix
