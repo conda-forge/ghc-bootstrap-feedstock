@@ -10,11 +10,14 @@ update_settings() {
 
     # On occasion, the build_prefix was hardcoded
     perl -i -pe 's#($ENV{BUILD_PREFIX}|$ENV{PREFIX})/bin/##' "${settings_file}"
+    
     # Add PREFIX conda libs
     perl -i -pe "s#(C compiler link flags\", \")([^\"]*)#\1\2 -L\\\$topdir/../../../../lib -Wl,-rpath,\\\$topdir/../../../../lib ${iconv_aliases} -liconv#" "${settings_file}"
     perl -i -pe "s#(ld flags\", \")([^\"]*)#\1\2 -L\\\$topdir/../../../../lib ${iconv_aliases} -liconv#" "${settings_file}"
 
-    cat "${settings_file}"
+    # We seem to need the Apple ar/ranlib
+    perl -i -pe "s#(ar command\", \").*\"#\1/usr/bin/ar\"#" "${settings_file}"
+    perl -i -pe "s#(ranlib command\", \").*\"#\1/usr/bin/ranlib\"#" "${settings_file}"
 
   elif [[ "${target_platform}" == "linux-"* ]]; then
     settings_file="${PREFIX}"/ghc-bootstrap/lib/ghc-"${PKG_VERSION}"/lib/settings
