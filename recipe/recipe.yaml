@@ -21,7 +21,7 @@ source:
       target_directory: bootstrap-ghc
 
 build:
-  number: 6
+  number: 7
   dynamic_linking:
     binary_relocation:
       - ghc-bootstrap/lib/${{ version }}/bin/*
@@ -64,7 +64,7 @@ requirements:
     - libiconv
     - if: not unix
       then: binutils
-    
+
 
 tests:
   - package_contents:
@@ -87,7 +87,7 @@ tests:
         - ghc-bootstrap/bin/runghc${{ "" if unix else ".exe" }}
         - ghc-bootstrap/bin/runhaskell-${{ version }}${{ "" if unix else ".exe" }}
         - ghc-bootstrap/bin/runhaskell${{ "" if unix else ".exe" }}
-        
+
         - if: linux
           then:
             - ghc-bootstrap/lib/private/libncurses.so.5
@@ -159,7 +159,7 @@ about:
   description: |
     GHC is a state-of-the-art, open source, compiler and interactive environment 
     for the functional language Haskell.
-    
+
     Conda-Forge Requirements:
     - Linux: glibc >= 2.17, clang compiler
     - macOS: macOS >= 10.13, clang compiler
@@ -167,7 +167,7 @@ about:
     Note: Windows builds may show overlinking warnings for system DLLs
     (SHLWAPI.dll, WSOCK32.dll, WINMM.dll). These are benign and don't
     affect functionality.
-    
+
   documentation: https://www.haskell.org/ghc/documentation.html
   repository: https://gitlab.haskell.org/ghc/ghc
 
