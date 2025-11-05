@@ -70,7 +70,7 @@ requirements:
 tests:
   - package_contents:
       files:
-        - etc/conda/activate.d/${{ name }}_activate${{ ".sh" if unix else ".bat" }}
+        - etc/conda/activate.d/ghc-bootstrap_activate${{ ".sh" if unix else ".bat" }}
         
         - ghc-bootstrap/bin/ghc${{ "" if unix else ".exe" }}
         - ghc-bootstrap/bin/ghc-${{ version }}${{ "" if unix else ".exe" }}
@@ -89,18 +89,17 @@ tests:
         
         - if: linux
           then:
+            - ghc-bootstrap/lib/ghc-${{ version }}/settings
+            - ghc-bootstrap/lib/ghc-${{ version }}/package.conf.d/**
             - ghc-bootstrap/lib/ghc-${{ version }}/private/libncurses.so.5
             - ghc-bootstrap/lib/ghc-${{ version }}/private/libtinfo.so.5
             - ghc-bootstrap/lib/ghc-${{ version }}/private/libtinfow.so.5
         
-        - if: osx
-          then:
+          elif: osx
+            - ghc-bootstrap/lib/ghc-${{ version }}/lib/settings
+            - ghc-bootstrap/lib/ghc-${{ version }}/lib/package.conf.d/**
             - ghc-bootstrap/lib/ghc-${{ version }}/lib/private/libiconv_compat.dylib
         
-        - if: unix
-          then:
-            - ghc-bootstrap/lib/ghc-${{ version }}/settings
-            - ghc-bootstrap/lib/ghc-${{ version }}/package.conf.d/**
           else:
             - ghc-bootstrap/bin/ghc-iserv-ghc-${{ version }}.exe
             - ghc-bootstrap/bin/ghc-iserv-prof-ghc-${{ version }}.exe

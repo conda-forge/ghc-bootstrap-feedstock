@@ -4,7 +4,7 @@ set -eu
 # Create directories for binaries and logs
 export GHC_INSTALLDIR="${PREFIX}/ghc-bootstrap"
 
-mkdir -p "${SRC_DIR}"/_logs "${PREFIX}/etc/conda/activate.d"
+mkdir -p "${SRC_DIR}"/_logs "${PREFIX}/etc/conda/activate.d" "${GHC_INSTALLDIR}"
 
 . "${RECIPE_DIR}"/building/build-"${target_platform}.sh"
 
