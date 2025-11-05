@@ -6,7 +6,19 @@ REM Based on CC variable or by searching for available compilers
 
 echo Windres wrapper - detecting C compiler...
 
-set WINDRES_CMD=%CONDA_PREFIX%\Library\x86_64-w64-mingw32\bin\windres.exe
+where windres.exe >nul 2>&1
+if !errorlevel! == 0 (
+    echo Found windres.exe
+    set WINDRES_CMD=windres.exe
+) else (
+    set WINDRES_CMD=%CONDA_PREFIX%\Library\x86_64-w64-mingw32\bin\windres.exe
+    if not exist "!WINDRES_CMD!" (
+        echo ERROR: windres.exe not found in PATH or conda environment
+        echo Expected location: !WINDRES_CMD!
+        exit /b 1
+    )
+    echo Using windres from conda environment: !WINDRES_CMD!
+)
 set PREPROCESSOR_CMD=
 set PREPROCESSOR_ARGS=
 

@@ -1,5 +1,5 @@
 context:
-  version: "9.6.7"
+  version: "9.2.8"
 
 package:
   name: ghc-bootstrap
@@ -9,19 +9,19 @@ source:
   - if: osx
     then:
       url: https://downloads.haskell.org/~ghc/${{ version }}/ghc-${{ version }}-x86_64-apple-darwin.tar.xz
-      sha256: f14fcb0b9be4ae7f6d71f4069cccecb9dce2c8c39a8596afde7e5de171ca03e5
+      sha256: eb78361feaf4277f627cbdc4b849849d09d175d0d878d28433719b7482db27f5
   - if: linux
     then:
       url: https://downloads.haskell.org/~ghc/${{ version }}/ghc-${{ version }}-x86_64-centos7-linux.tar.xz
-      sha256: 0047e4820cac57bcb51f2d3bbdade455ee12e190df3af7ba15654e87752b89e1
+      sha256: 70c3ecbc6457f67ba0e76bd0ca2500bd0edd8262d3236a23422fad7602efa672
   - if: not unix
     then:
       url: https://downloads.haskell.org/~ghc/${{ version }}/ghc-${{ version }}-x86_64-unknown-mingw32.tar.xz
-      sha256: cf0e736ce4c875de0296426ee575eca177acf6b9b5c1dd4881b9fc79681e1d5f
+      sha256: f11c7270839c50fda44f98b54254ae50340bb58b04f8d81ebcbe67a2827bd511
       target_directory: bootstrap-ghc
 
 build:
-  number: 1
+  number: 0
   # We will not need x-compiled ghc-bootstrap
   skip: aarch64 or ppc64le or arm64
 
@@ -72,27 +72,27 @@ tests:
         - ghc-bootstrap/bin/ghci${{ "" if unix else ".exe" }}
         - ghc-bootstrap/bin/haddock-ghc-${{ version }}${{ "" if unix else ".exe" }}
         - ghc-bootstrap/bin/haddock${{ "" if unix else ".exe" }}
-        - ghc-bootstrap/bin/hp2ps-ghc-${{ version }}${{ "" if unix else ".exe" }}
         - ghc-bootstrap/bin/hp2ps${{ "" if unix else ".exe" }}
-        - ghc-bootstrap/bin/hpc-ghc-${{ version }}${{ "" if unix else ".exe" }}
         - ghc-bootstrap/bin/hpc${{ "" if unix else ".exe" }}
-        - ghc-bootstrap/bin/hsc2hs-ghc-${{ version }}${{ "" if unix else ".exe" }}
         - ghc-bootstrap/bin/hsc2hs${{ "" if unix else ".exe" }}
         - ghc-bootstrap/bin/runghc-${{ version }}${{ "" if unix else ".exe" }}
         - ghc-bootstrap/bin/runghc${{ "" if unix else ".exe" }}
-        - ghc-bootstrap/bin/runhaskell-${{ version }}${{ "" if unix else ".exe" }}
         - ghc-bootstrap/bin/runhaskell${{ "" if unix else ".exe" }}
         
         - if: linux
           then:
-            - ghc-bootstrap/lib/private/libncurses.so.5
-            - ghc-bootstrap/lib/private/libtinfo.so.5
-            - ghc-bootstrap/lib/private/libtinfow.so.5
+            - ghc-bootstrap/lib/ghc-${{ version }}/private/libncurses.so.5
+            - ghc-bootstrap/lib/ghc-${{ version }}/private/libtinfo.so.5
+            - ghc-bootstrap/lib/ghc-${{ version }}/private/libtinfow.so.5
+        
+        - if: osx
+          then:
+            - ghc-bootstrap/lib/ghc-${{ version }}/private/libiconv_compat.dylib
         
         - if: unix
           then:
-            - ghc-bootstrap/lib/ghc-${{ version }}/lib/settings
-            - ghc-bootstrap/lib/ghc-${{ version }}/lib/package.conf.d/**
+            - ghc-bootstrap/lib/ghc-${{ version }}/settings
+            - ghc-bootstrap/lib/ghc-${{ version }}/package.conf.d/**
           else:
             - ghc-bootstrap/bin/ghc-iserv-ghc-${{ version }}.exe
             - ghc-bootstrap/bin/ghc-iserv-prof-ghc-${{ version }}.exe
@@ -105,8 +105,8 @@ tests:
 
             - ghc-bootstrap/bin/windres.bat
 
-            - ghc-bootstrap/lib/settings
-            - ghc-bootstrap/lib/package.conf.d/**
+            - ghc-bootstrap/settings
+            - ghc-bootstrap/package.conf.d/**
 
             - ghc-bootstrap/mingw/bin/__unused__
             - ghc-bootstrap/mingw/include/__unused__
@@ -130,7 +130,7 @@ tests:
       - printf 'main = putStrLn "Hello conda-forge"\n' > hello.hs
       - if: unix
         then: |
-          ${PREFIX}/ghc-bootstrap/bin/ghc hello.hs
+          ${PREFIX}/ghc-bootstrap/bin/ghc -v hello.hs
           ./hello
         else: |
           echo main = putStrLn "Hello conda-forge" > hello.hs
@@ -140,6 +140,8 @@ tests:
       run:
         - ${{ compiler('c') }}
         - ${{ stdlib('c') }}
+        - gmp
+        - libffi
         - if: not unix
           then: binutils
 
@@ -147,7 +149,7 @@ tests:
       - printf 'import System.Posix.Signals\nmain = installHandler sigTERM Default Nothing >> putStrLn "Signal test"\n' > signal_test.hs
       - if: unix
         then: |
-          ${PREFIX}/ghc-bootstrap/bin/ghc signal_test.hs
+          ${PREFIX}/ghc-bootstrap/bin/ghc -v signal_test.hs
           ./signal_test
         else: |
           echo Skipping signal test on Windows
@@ -155,6 +157,8 @@ tests:
       run:
         - ${{ compiler('c') }}
         - ${{ stdlib('c') }}
+        - gmp
+        - libffi
         - if: not unix
           then: binutils
 
