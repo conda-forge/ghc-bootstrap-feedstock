@@ -5,7 +5,7 @@ pushd bootstrap-ghc 2>/dev/null || exit 1
   tar cf - ./* | (cd "${GHC_INSTALLDIR}" || exit; tar xf -)
 popd 2>/dev/null || exit 1
 
-settings_file=$(find "${_topdir}" -name settings)
+settings_file=$(find "${GHC_INSTALLDIR}" -name settings)
 
 # Reassign mingw references to conda Mingw
 perl -i -pe 's#\$topdir/../mingw//bin/(llvm-)?##' "${settings_file}"
