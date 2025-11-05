@@ -130,29 +130,16 @@ tests:
       - printf 'main = putStrLn "Hello conda-forge"\n' > hello.hs
       - if: unix
         then: |
-          ${PREFIX}/ghc-bootstrap/bin/ghc -v hello.hs
-          ./hello
+          ${PREFIX}/ghc-bootstrap/bin/ghc testing/hello.hs -o hello && ./hello
+          ${PREFIX}/ghc-bootstrap/bin/ghc testing/signal_test.hs -o signal_test && ./signal_test
+          ${PREFIX}/ghc-bootstrap/bin/ghc testing/iconv_test.hs -o iconv_test && ./iconv_test
         else: |
           echo main = putStrLn "Hello conda-forge" > hello.hs
           CALL %PREFIX%\ghc-bootstrap\bin\ghc.exe hello.hs
           hello.exe
-    requirements:
-      run:
-        - ${{ compiler('c') }}
-        - ${{ stdlib('c') }}
-        - gmp
-        - libffi
-        - if: not unix
-          then: binutils
-
-  - script:
-      - printf 'import System.Posix.Signals\nmain = installHandler sigTERM Default Nothing >> putStrLn "Signal test"\n' > signal_test.hs
-      - if: unix
-        then: |
-          ${PREFIX}/ghc-bootstrap/bin/ghc -v signal_test.hs
-          ./signal_test
-        else: |
-          echo Skipping signal test on Windows
+    files:
+      recipe:
+        - testing/
     requirements:
       run:
         - ${{ compiler('c') }}
