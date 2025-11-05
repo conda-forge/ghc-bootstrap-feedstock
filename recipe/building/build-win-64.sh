@@ -39,7 +39,7 @@ perl -i -pe 's/--target=([^ ]*)//g' "${settings_file}"
 
 # Wrap windres
 perl -i -pe 's#("windres command", ")[^"]*"#\1\$topdir/../bin/windres.bat"#g' "${settings_file}"
-cp "${RECIPE_DIR}"/windres.bat "${GHC_INSTALLDIR}"/bin/windres.bat
+cp "${RECIPE_DIR}"/building/windres.bat "${GHC_INSTALLDIR}"/bin/windres.bat
 
 cat "${settings_file}"
 

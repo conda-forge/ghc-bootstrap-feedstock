@@ -25,7 +25,7 @@ perl -i -pe "s#(C compiler link flags\", \")([^\"]*)\"#\1\2 -Wl,-L${settings_pri
 perl -i -pe "s#(ld flags\", \")([^\"]*)\"#\1\2 -L${settings_private} -rpath ${settings_private} -L"${settings_topdir}"/lib -rpath ${settings_topdir}/lib\"#g" "${settings_file}"
 
 # We enforce prioritizing conda libs and create a stub for missing symbols in libiconv
-${CC} -dynamiclib -o "${_topdir}"/private/libiconv_compat.dylib "${RECIPE_DIR}"/osx_iconv_compat.c \
+${CC} -dynamiclib -o "${_topdir}"/private/libiconv_compat.dylib "${RECIPE_DIR}"/building/osx_iconv_compat.c \
     -L"${PREFIX}/lib" -liconv \
     -Wl,-rpath,"${PREFIX}/lib" \
     -mmacosx-version-min=10.13 \
