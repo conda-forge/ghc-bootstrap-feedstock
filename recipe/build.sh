@@ -11,9 +11,9 @@ mkdir -p "${SRC_DIR}"/_logs "${PREFIX}/etc/conda/activate.d" "${GHC_INSTALLDIR}"
   
 # Reduce footprint
 rm -rf "${GHC_INSTALLDIR}"/share/doc/ghc-"${PKG_VERSION}"/html
-find "${_topdir}" -name '*_p.a' -delete
-find "${_topdir}" -name '*.p_o' -delete
+find "${GHC_INSTALLDIR}" -name '*_p.a' -delete
+find "${GHC_INSTALLDIR}" -name '*.p_o' -delete
 
 # Clean up package cache
-rm -f "${_topdir}"/lib/package.conf.d/package.cache
-rm -f "${_topdir}"/lib/package.conf.d/package.cache.lock
+find "${GHC_INSTALLDIR}" -name package.cache -delete
+find "${GHC_INSTALLDIR}" -name package.cache.lock -delete

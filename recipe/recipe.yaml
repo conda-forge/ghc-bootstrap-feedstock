@@ -96,6 +96,7 @@ tests:
             - ghc-bootstrap/lib/ghc-${{ version }}/private/libtinfow.so.5
         
           elif: osx
+          then:
             - ghc-bootstrap/lib/ghc-${{ version }}/lib/settings
             - ghc-bootstrap/lib/ghc-${{ version }}/lib/package.conf.d/**
             - ghc-bootstrap/lib/ghc-${{ version }}/lib/private/libiconv_compat.dylib
