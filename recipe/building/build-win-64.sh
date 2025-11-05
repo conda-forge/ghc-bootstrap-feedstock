@@ -2,7 +2,7 @@
 set -eu
 
 pushd bootstrap-ghc 2>/dev/null || exit 1
-  tar cf - ./* | (cd "${_installdir}" || exit; tar xf -)
+  tar cf - ./* | (cd "${GHC_INSTALLDIR}" || exit; tar xf -)
 popd 2>/dev/null || exit 1
 
 settings_file=$(find "${_topdir}" -name settings)
@@ -39,20 +39,20 @@ perl -i -pe 's/--target=([^ ]*)//g' "${settings_file}"
 
 # Wrap windres
 perl -i -pe 's#("windres command", ")[^"]*"#\1\$topdir/../bin/windres.bat"#g' "${settings_file}"
-cp "${RECIPE_DIR}"/windres.bat "${_installdir}"/bin/windres.bat
+cp "${RECIPE_DIR}"/windres.bat "${GHC_INSTALLDIR}"/bin/windres.bat
 
 cat "${settings_file}"
 
 # Reduce footprint
-rm -rf "${_installdir}"/lib/lib
-rm -rf "${_installdir}"/lib/doc/html
-rm -rf "${_installdir}"/doc/html
-rm -rf "${_installdir}"/mingw
+rm -rf "${GHC_INSTALLDIR}"/lib/lib
+rm -rf "${GHC_INSTALLDIR}"/lib/doc/html
+rm -rf "${GHC_INSTALLDIR}"/doc/html
+rm -rf "${GHC_INSTALLDIR}"/mingw
 
-mkdir -p "${_installdir}"/mingw/{include,lib,bin,share}
-echo "Fake mingw directory created at ${_installdir}/mingw" | cat >> "${_installdir}"/mingw/include/__unused__
-echo "Fake mingw directory created at ${_installdir}/mingw" | cat >> "${_installdir}"/mingw/lib/__unused__
-echo "Fake mingw directory created at ${_installdir}/mingw" | cat >> "${_installdir}"/mingw/bin/__unused__
-echo "Fake mingw directory created at ${_installdir}/mingw" | cat >> "${_installdir}"/mingw/share/__unused__
+mkdir -p "${GHC_INSTALLDIR}"/mingw/{include,lib,bin,share}
+echo "Fake mingw directory created at ${GHC_INSTALLDIR}/mingw" | cat >> "${GHC_INSTALLDIR}"/mingw/include/__unused__
+echo "Fake mingw directory created at ${GHC_INSTALLDIR}/mingw" | cat >> "${GHC_INSTALLDIR}"/mingw/lib/__unused__
+echo "Fake mingw directory created at ${GHC_INSTALLDIR}/mingw" | cat >> "${GHC_INSTALLDIR}"/mingw/bin/__unused__
+echo "Fake mingw directory created at ${GHC_INSTALLDIR}/mingw" | cat >> "${GHC_INSTALLDIR}"/mingw/share/__unused__
 
 cp "${RECIPE_DIR}/activate.bat" "${PREFIX}/etc/conda/activate.d/${PKG_NAME}_activate.bat"

@@ -5,9 +5,7 @@ unset build_alias
 unset host_alias
 
 # Create directories for binaries and logs
-_installdir="${PREFIX}/ghc-bootstrap"
-
-_topdir="${_installdir}/lib/ghc-${PKG_VERSION}"
+_topdir="${GHC_INSTALLDIR}/lib/ghc-${PKG_VERSION}"
 settings_topdir="\\\$topdir/../../.."
 
 _privatedir="${_topdir}/private"
@@ -24,7 +22,7 @@ perl -i -pe "s|/lib64/ld-linux-x86-64.so.2|ld-2.17.so|g" "$sysroot_libc_script"
 # This is needed by make install to use ncurses 5
 export LD_PRELOAD=${BUILD_PREFIX}/lib/libtinfo.so
 ./configure \
-  --prefix="${_installdir}" \
+  --prefix="${GHC_INSTALLDIR}" \
   --build="${BUILD}" \
   --host="${HOST}" \
   >& "${SRC_DIR}"/_logs/configure.log
@@ -74,7 +72,7 @@ ghc_test_log="${SRC_DIR}"/_logs/ghc_signal_test.log
 # This helps the linker find libgmp during the build-time verification
 export LD_LIBRARY_PATH="${BUILD_PREFIX}/lib:${LD_LIBRARY_PATH:-}"
 
-"${_installdir}"/bin/ghc -v -L"${BUILD_PREFIX}"/lib -optc-fno-PIE -optl-no-pie signal_test.hs >> "${ghc_test_log}" 2>&1 || {
+"${GHC_INSTALLDIR}"/bin/ghc -v -L"${BUILD_PREFIX}"/lib -optc-fno-PIE -optl-no-pie signal_test.hs >> "${ghc_test_log}" 2>&1 || {
   cat "${ghc_test_log}"
   exit 1
 }
