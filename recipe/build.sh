@@ -9,21 +9,21 @@ update_settings() {
     iconv_aliases="${iconv_aliases} -Wl,-alias,_libiconv_close,_iconv_close"
 
     # On occasion, the build_prefix was hardcoded
-    perl -i -pe 's#($ENV{BUILD_PREFIX}|$ENV{PREFIX})/bin/##' "${_settings_file}"
+    perl -i -pe 's#($ENV{BUILD_PREFIX}|$ENV{PREFIX})/bin/##' "${settings_file}"
     
     # Add PREFIX conda libs
-    perl -i -pe "s#(C compiler link flags\", \")([^\"]*)#\1\2 -L\\\$topdir/../../../../lib -Wl,-rpath,\\\$topdir/../../../../lib ${iconv_aliases} -liconv#" "${_settings_file}"
-    perl -i -pe "s#(ld flags\", \")([^\"]*)#\1\2 -L\\\$topdir/../../../../lib ${iconv_aliases} -liconv#" "${_settings_file}"
+    perl -i -pe "s#(C compiler link flags\", \")([^\"]*)#\1\2 -L\\\$topdir/../../../../lib -Wl,-rpath,\\\$topdir/../../../../lib ${iconv_aliases} -liconv#" "${settings_file}"
+    perl -i -pe "s#(ld flags\", \")([^\"]*)#\1\2 -L\\\$topdir/../../../../lib ${iconv_aliases} -liconv#" "${settings_file}"
 
     # We seem to need the Apple ar/ranlib
-    perl -i -pe "s#(ar command\", \").*\"#\1/usr/bin/ar\"#" "${_settings_file}"
-    perl -i -pe "s#(ranlib command\", \").*\"#\1/usr/bin/ranlib\"#" "${_settings_file}"
+    perl -i -pe "s#(ar command\", \").*\"#\1/usr/bin/ar\"#" "${settings_file}"
+    perl -i -pe "s#(ranlib command\", \").*\"#\1/usr/bin/ranlib\"#" "${settings_file}"
 
   elif [[ "${target_platform}" == "linux-"* ]]; then
     settings_file="${PREFIX}"/ghc-bootstrap/lib/ghc-"${PKG_VERSION}"/lib/settings
 
     # On occasion, the build_prefix was hardcoded
-    perl -i -pe 's#($ENV{BUILD_PREFIX}|$ENV{PREFIX})/bin/##' "${_settings_file}"
+    perl -i -pe 's#($ENV{BUILD_PREFIX}|$ENV{PREFIX})/bin/##' "${settings_file}"
 
     # Fixing the sysroot
     compiling="--sysroot=\\\$topdir/../../../../x86_64-conda-linux-gnu/sysroot"
@@ -41,47 +41,47 @@ update_settings() {
     ld_linking="${ld_linking} -L\\\$topdir/../../../../x86_64-conda-linux-gnu/lib"
     ld_linking="${ld_linking} -L\\\$topdir/../../../../lib"
 
-    perl -i -pe "s#(C compiler flags\", \")#\1 ${compiling} #" "${_settings_file}"
-    perl -i -pe "s#(C\+\+ compiler flags\", \")#\1 ${compiling} #" "${_settings_file}"
-    perl -i -pe "s#(Haskell CPP flags\", \")#\1 ${compiling} #" "${_settings_file}"
-    perl -i -pe "s#(link flags\", \")#\1 ${clang_linking} #" "${_settings_file}"
-    perl -i -pe "s#(ld flags\", \")#\1 ${ld_linking} #" "${_settings_file}"
+    perl -i -pe "s#(C compiler flags\", \")#\1 ${compiling} #" "${settings_file}"
+    perl -i -pe "s#(C\+\+ compiler flags\", \")#\1 ${compiling} #" "${settings_file}"
+    perl -i -pe "s#(Haskell CPP flags\", \")#\1 ${compiling} #" "${settings_file}"
+    perl -i -pe "s#(link flags\", \")#\1 ${clang_linking} #" "${settings_file}"
+    perl -i -pe "s#(ld flags\", \")#\1 ${ld_linking} #" "${settings_file}"
 
   else
     settings_file="${PREFIX}"/ghc-bootstrap/lib/settings
 
     # Reassign mingw references to conda-forge Mingw
-    perl -i -pe 's#\$topdir/../mingw//bin/(llvm-)?##' "${_settings_file}"
-    perl -i -pe 's#-I\$topdir/../mingw//include#-I\$topdir/../../Library/include#g' "${_settings_file}"
-    perl -i -pe 's#-L\$topdir/../mingw//lib#-L\$topdir/../../Library/lib#g' "${_settings_file}"
-    perl -i -pe 's#-L\$topdir/../mingw//x86_64-w64-mingw32/lib#-L\$topdir/../../Library/bin -L\$topdir/../../Library/x86_64-w64-mingw32/sysroot/usr/lib -Wl,-rpath,\$topdir/../../Library/x86_64-w64-mingw32/sysroot/usr/lib#g' "${_settings_file}"
+    perl -i -pe 's#\$topdir/../mingw//bin/(llvm-)?##' "${settings_file}"
+    perl -i -pe 's#-I\$topdir/../mingw//include#-I\$topdir/../../Library/include#g' "${settings_file}"
+    perl -i -pe 's#-L\$topdir/../mingw//lib#-L\$topdir/../../Library/lib#g' "${settings_file}"
+    perl -i -pe 's#-L\$topdir/../mingw//x86_64-w64-mingw32/lib#-L\$topdir/../../Library/bin -L\$topdir/../../Library/x86_64-w64-mingw32/sysroot/usr/lib -Wl,-rpath,\$topdir/../../Library/x86_64-w64-mingw32/sysroot/usr/lib#g' "${settings_file}"
 
     # Add Windows-specific compiler flags to settings
-    perl -i -pe 's/("C compiler command", ")([^"]*)"/\1x86_64-w64-mingw32-gcc.exe"/g' "${_settings_file}"
-    perl -i -pe 's/("C\+\+ compiler command", ")([^"]*)"/\1x86_64-w64-mingw32-g++.exe"/g' "${_settings_file}"
-    perl -i -pe 's/(CPP command", ")([^"]*)"/\1x86_64-w64-mingw32-gcc.exe"/g' "${_settings_file}"
-    perl -i -pe 's/("C compiler link flags", ")([^"]*)"/\1-fuse-ld=bfd -Wl,--enable-auto-import"/g' "${_settings_file}"
+    perl -i -pe 's/("C compiler command", ")([^"]*)"/\1x86_64-w64-mingw32-gcc.exe"/g' "${settings_file}"
+    perl -i -pe 's/("C\+\+ compiler command", ")([^"]*)"/\1x86_64-w64-mingw32-g++.exe"/g' "${settings_file}"
+    perl -i -pe 's/(CPP command", ")([^"]*)"/\1x86_64-w64-mingw32-gcc.exe"/g' "${settings_file}"
+    perl -i -pe 's/("C compiler link flags", ")([^"]*)"/\1-fuse-ld=bfd -Wl,--enable-auto-import"/g' "${settings_file}"
 
     # Update GHC settings for Windows toolchain compatibility
-    perl -i -pe 's/("ar command", ")([^"]*)"/\1x86_64-w64-mingw32-ar.exe"/g' "${_settings_file}"
-    perl -i -pe 's/("ar flags", ")([^"]*)"/\1qc"/g' "${_settings_file}"
-    perl -i -pe 's/("ar supports -L", ")([^"]*)"/\1NO"/g' "${_settings_file}"
+    perl -i -pe 's/("ar command", ")([^"]*)"/\1x86_64-w64-mingw32-ar.exe"/g' "${settings_file}"
+    perl -i -pe 's/("ar flags", ")([^"]*)"/\1qc"/g' "${settings_file}"
+    perl -i -pe 's/("ar supports -L", ")([^"]*)"/\1NO"/g' "${settings_file}"
 
     # Configure ranlib
-    perl -i -pe 's/("ranlib command", ")([^"]*)"/\1x86_64-w64-mingw32-ranlib.exe"/g' "${_settings_file}"
+    perl -i -pe 's/("ranlib command", ")([^"]*)"/\1x86_64-w64-mingw32-ranlib.exe"/g' "${settings_file}"
 
     # Force use of GNU ld instead of lld to avoid relocation type 0xe errors
-    perl -i -pe 's/("Merge objects command", ")([^"]*)"/\1x86_64-w64-mingw32-ld.exe"/g' "${_settings_file}"
-    perl -i -pe 's/("Merge objects flags", ")([^"]*)"/\1-r"/g' "${_settings_file}"
-    perl -i -pe 's/("Merge objects supports response files", ")([^"]*)"/\1YES"/g' "${_settings_file}"
+    perl -i -pe 's/("Merge objects command", ")([^"]*)"/\1x86_64-w64-mingw32-ld.exe"/g' "${settings_file}"
+    perl -i -pe 's/("Merge objects flags", ")([^"]*)"/\1-r"/g' "${settings_file}"
+    perl -i -pe 's/("Merge objects supports response files", ")([^"]*)"/\1YES"/g' "${settings_file}"
 
     # Remove clang compiler options
-    perl -i -pe 's/--rtlib=compiler-rt//g' "${_settings_file}"
-    perl -i -pe 's/-Qunused-arguments//g' "${_settings_file}"
-    perl -i -pe 's/--target=([^ ]*)//g' "${_settings_file}"
+    perl -i -pe 's/--rtlib=compiler-rt//g' "${settings_file}"
+    perl -i -pe 's/-Qunused-arguments//g' "${settings_file}"
+    perl -i -pe 's/--target=([^ ]*)//g' "${settings_file}"
 
     # Wrap windres
-    perl -i -pe 's#("windres command", ")[^"]*"#\1\$topdir/../bin/windres.bat"#g' "${_settings_file}"
+    perl -i -pe 's#("windres command", ")[^"]*"#\1\$topdir/../bin/windres.bat"#g' "${settings_file}"
   fi
 }
 
@@ -93,7 +93,6 @@ _installdir="${PREFIX}/ghc-bootstrap"
 _topdir="${_installdir}/lib/ghc-${PKG_VERSION}"
 _conda_root_topdir="\\\$topdir/../../.."
 _private_topdir="\\\$topdir/private"
-_settings_file="${_topdir}/lib/settings"
 
 mkdir -p "${_topdir}"/private "${SRC_DIR}"/_logs
 debug_log="${SRC_DIR}"/_logs/settings_debug.log
@@ -125,12 +124,12 @@ if [[ ! -d bootstrap-ghc ]]; then
   echo "Running make install ..."
   make install >& "${SRC_DIR}"/_logs/make_install.log
 
-  # Isolating settings_file variable in subshell
-  perl -i -pe 's#($ENV{BUILD_PREFIX}|$ENV{PREFIX})/bin/##g' "${_settings_file}"
+  settings_file=$(find "${_topdir}" -name settings)
+  perl -i -pe 's#($ENV{BUILD_PREFIX}|$ENV{PREFIX})/bin/##g' "${settings_file}"
 
   # Add system libs
-  perl -i -pe "s#(C compiler link flags\", \")([^\"]*)\"#\1\2 -Wl,-L${_private_topdir} -Wl,-rpath ${_private_topdir} -Wl,-L${_conda_root_topdir}/lib -Wl,-rpath,${_conda_root_topdir}/lib -Wl,-rpath-link,${_conda_root_topdir}/lib\"#g" "${_settings_file}"
-  perl -i -pe "s#(ld flags\", \")([^\"]*)\"#\1\2 -L${_private_topdir} -rpath ${_private_topdir} -L"${_conda_root_topdir}"/lib -rpath ${_conda_root_topdir}/lib -rpath-link ${_conda_root_topdir}/lib\"#g" "${_settings_file}"
+  perl -i -pe "s#(C compiler link flags\", \")([^\"]*)\"#\1\2 -Wl,-L${_private_topdir} -Wl,-rpath ${_private_topdir} -Wl,-L${_conda_root_topdir}/lib -Wl,-rpath,${_conda_root_topdir}/lib -Wl,-rpath-link,${_conda_root_topdir}/lib\"#g" "${settings_file}"
+  perl -i -pe "s#(ld flags\", \")([^\"]*)\"#\1\2 -L${_private_topdir} -rpath ${_private_topdir} -L"${_conda_root_topdir}"/lib -rpath ${_conda_root_topdir}/lib -rpath-link ${_conda_root_topdir}/lib\"#g" "${settings_file}"
   
   # We enforce prioritizing conda libs and create a stub for missing symbols in libiconv
   if [[ "${target_platform}" == "osx-"* ]]; then
@@ -139,19 +138,19 @@ if [[ ! -d bootstrap-ghc ]]; then
         -Wl,-rpath,"${PREFIX}/lib" \
         -mmacosx-version-min=10.13 \
         -install_name "${_topdir}"/private/libiconv_compat.dylib
-    perl -i -pe 's#("C compiler link flags", ")([^"]*)"#\1\2 -liconv_compat"#g' "${_settings_file}"
-    perl -i -pe 's#("ld link flags", ")([^"]*)"#\1\2 -liconv_compat"#g' "${_settings_file}"
+    perl -i -pe 's#("C compiler link flags", ")([^"]*)"#\1\2 -liconv_compat"#g' "${settings_file}"
+    perl -i -pe 's#("ld link flags", ")([^"]*)"#\1\2 -liconv_compat"#g' "${settings_file}"
 
     # # We seem to need the Apple ar/ranlib
-    # perl -i -pe "s#(ar command\", \").*\"#\1/usr/bin/ar\"#" "${_settings_file}"
-    # perl -i -pe "s#(ranlib command\", \").*\"#\1/usr/bin/ranlib\"#" "${_settings_file}"
+    # perl -i -pe "s#(ar command\", \").*\"#\1/usr/bin/ar\"#" "${settings_file}"
+    # perl -i -pe "s#(ranlib command\", \").*\"#\1/usr/bin/ranlib\"#" "${settings_file}"
 
   fi
 
   if [[ "${target_platform}" == "linux-"* ]]; then
-    perl -i -pe "s#(compiler flags\", \")([^\"]*)\"#\1\2 -fno-PIE -I${_conda_root_topdir}/x86_64-conda-linux-gnu/sysroot/usr/include\"#g" "${_settings_file}"
-    perl -i -pe "s#(C compiler link flags\", \")([^\"]*)\"#\1\2 -Wl,-no-pie -Wl,-L${_conda_root_topdir}/x86_64-conda-linux-gnu/sysroot/lib64 -Wl,-L${_conda_root_topdir}/x86_64-conda-linux-gnu/sysroot/usr/lib64\"#g" "${_settings_file}"
-    perl -i -pe "s#(ld flags\", \")([^\"]*)\"#\1\2 -no-pie -L${_conda_root_topdir}/x86_64-conda-linux-gnu/sysroot/lib64 -L${_conda_root_topdir}/x86_64-conda-linux-gnu/sysroot/usr/lib64\"#g" "${_settings_file}"
+    perl -i -pe "s#(compiler flags\", \")([^\"]*)\"#\1\2 -fno-PIE -I${_conda_root_topdir}/x86_64-conda-linux-gnu/sysroot/usr/include\"#g" "${settings_file}"
+    perl -i -pe "s#(C compiler link flags\", \")([^\"]*)\"#\1\2 -Wl,-no-pie -Wl,-L${_conda_root_topdir}/x86_64-conda-linux-gnu/sysroot/lib64 -Wl,-L${_conda_root_topdir}/x86_64-conda-linux-gnu/sysroot/usr/lib64\"#g" "${settings_file}"
+    perl -i -pe "s#(ld flags\", \")([^\"]*)\"#\1\2 -no-pie -L${_conda_root_topdir}/x86_64-conda-linux-gnu/sysroot/lib64 -L${_conda_root_topdir}/x86_64-conda-linux-gnu/sysroot/usr/lib64\"#g" "${settings_file}"
 
     echo "Bundling ncurses 5 libraries privately"
     # Copy ncurses 5 shared libraries to private location
@@ -206,41 +205,43 @@ else
     tar cf - ./* | (cd "${_installdir}" || exit; tar xf -)
   popd 2>/dev/null || exit 1
 
+  settings_file=$(find "${_topdir}" -name settings)
+  
   # Reassign mingw references to conda Mingw
-  perl -i -pe 's#\$topdir/../mingw//bin/(llvm-)?##' "${_settings_file}"
-  perl -i -pe 's#-I\$topdir/../mingw//include#-I\$topdir/../../Library/include#g' "${_settings_file}"
-  perl -i -pe 's#-L\$topdir/../mingw//lib#-L\$topdir/../../Library/lib#g' "${_settings_file}"
-  perl -i -pe 's#-L\$topdir/../mingw//x86_64-w64-mingw32/lib#-L\$topdir/../../Library/bin -L\$topdir/../../Library/x86_64-w64-mingw32/sysroot/usr/lib -Wl,-rpath,\$topdir/../../Library/x86_64-w64-mingw32/sysroot/usr/lib#g' "${_settings_file}"
+  perl -i -pe 's#\$topdir/../mingw//bin/(llvm-)?##' "${settings_file}"
+  perl -i -pe 's#-I\$topdir/../mingw//include#-I\$topdir/../../Library/include#g' "${settings_file}"
+  perl -i -pe 's#-L\$topdir/../mingw//lib#-L\$topdir/../../Library/lib#g' "${settings_file}"
+  perl -i -pe 's#-L\$topdir/../mingw//x86_64-w64-mingw32/lib#-L\$topdir/../../Library/bin -L\$topdir/../../Library/x86_64-w64-mingw32/sysroot/usr/lib -Wl,-rpath,\$topdir/../../Library/x86_64-w64-mingw32/sysroot/usr/lib#g' "${settings_file}"
 
   # Add Windows-specific compiler flags to settings
-  perl -i -pe 's/("C compiler command", ")([^"]*)"/\1x86_64-w64-mingw32-gcc.exe"/g' "${_settings_file}"
-  perl -i -pe 's/("C\+\+ compiler command", ")([^"]*)"/\1x86_64-w64-mingw32-g++.exe"/g' "${_settings_file}"
-  perl -i -pe 's/(CPP command", ")([^"]*)"/\1x86_64-w64-mingw32-gcc.exe"/g' "${_settings_file}"
-  perl -i -pe 's/("C compiler link flags", ")([^"]*)"/\1-fuse-ld=bfd -Wl,--enable-auto-import"/g' "${_settings_file}"
+  perl -i -pe 's/("C compiler command", ")([^"]*)"/\1x86_64-w64-mingw32-gcc.exe"/g' "${settings_file}"
+  perl -i -pe 's/("C\+\+ compiler command", ")([^"]*)"/\1x86_64-w64-mingw32-g++.exe"/g' "${settings_file}"
+  perl -i -pe 's/(CPP command", ")([^"]*)"/\1x86_64-w64-mingw32-gcc.exe"/g' "${settings_file}"
+  perl -i -pe 's/("C compiler link flags", ")([^"]*)"/\1-fuse-ld=bfd -Wl,--enable-auto-import"/g' "${settings_file}"
 
   # Update GHC settings for Windows toolchain compatibility
-  perl -i -pe 's/("ar command", ")([^"]*)"/\1x86_64-w64-mingw32-ar.exe"/g' "${_settings_file}"
-  perl -i -pe 's/("ar flags", ")([^"]*)"/\1qc"/g' "${_settings_file}"
-  perl -i -pe 's/("ar supports -L", ")([^"]*)"/\1NO"/g' "${_settings_file}"
+  perl -i -pe 's/("ar command", ")([^"]*)"/\1x86_64-w64-mingw32-ar.exe"/g' "${settings_file}"
+  perl -i -pe 's/("ar flags", ")([^"]*)"/\1qc"/g' "${settings_file}"
+  perl -i -pe 's/("ar supports -L", ")([^"]*)"/\1NO"/g' "${settings_file}"
 
   # Configure ranlib
-  perl -i -pe 's/("ranlib command", ")([^"]*)"/\1x86_64-w64-mingw32-ranlib.exe"/g' "${_settings_file}"
+  perl -i -pe 's/("ranlib command", ")([^"]*)"/\1x86_64-w64-mingw32-ranlib.exe"/g' "${settings_file}"
     
   # Force use of GNU ld instead of lld to avoid relocation type 0xe errors
-  perl -i -pe 's/("Merge objects command", ")([^"]*)"/\1x86_64-w64-mingw32-ld.exe"/g' "${_settings_file}"
-  perl -i -pe 's/("Merge objects flags", ")([^"]*)"/\1-r"/g' "${_settings_file}"
-  perl -i -pe 's/("Merge objects supports response files", ")([^"]*)"/\1YES"/g' "${_settings_file}"
+  perl -i -pe 's/("Merge objects command", ")([^"]*)"/\1x86_64-w64-mingw32-ld.exe"/g' "${settings_file}"
+  perl -i -pe 's/("Merge objects flags", ")([^"]*)"/\1-r"/g' "${settings_file}"
+  perl -i -pe 's/("Merge objects supports response files", ")([^"]*)"/\1YES"/g' "${settings_file}"
   
   # Remove clang compiler options
-  perl -i -pe 's/--rtlib=compiler-rt//g' "${_settings_file}"
-  perl -i -pe 's/-Qunused-arguments//g' "${_settings_file}"
-  perl -i -pe 's/--target=([^ ]*)//g' "${_settings_file}"
+  perl -i -pe 's/--rtlib=compiler-rt//g' "${settings_file}"
+  perl -i -pe 's/-Qunused-arguments//g' "${settings_file}"
+  perl -i -pe 's/--target=([^ ]*)//g' "${settings_file}"
 
   # Wrap windres
-  perl -i -pe 's#("windres command", ")[^"]*"#\1\$topdir/../bin/windres.bat"#g' "${_settings_file}"
+  perl -i -pe 's#("windres command", ")[^"]*"#\1\$topdir/../bin/windres.bat"#g' "${settings_file}"
   cp "${RECIPE_DIR}"/windres.bat "${_installdir}"/bin/windres.bat
 
-  cat "${_settings_file}"
+  cat "${settings_file}"
 
   # Reduce footprint
   rm -rf "${_installdir}"/lib/lib
