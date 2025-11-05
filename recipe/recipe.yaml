@@ -70,6 +70,8 @@ requirements:
 tests:
   - package_contents:
       files:
+        - etc/conda/activate.d/${{ name }}_activate{{ ".sh" if unix else ".bat" }}
+        
         - ghc-bootstrap/bin/ghc${{ "" if unix else ".exe" }}
         - ghc-bootstrap/bin/ghc-${{ version }}${{ "" if unix else ".exe" }}
         - ghc-bootstrap/bin/ghc-pkg-${{ version }}${{ "" if unix else ".exe" }}
@@ -93,7 +95,7 @@ tests:
         
         - if: osx
           then:
-            - ghc-bootstrap/lib/ghc-${{ version }}/private/libiconv_compat.dylib
+            - ghc-bootstrap/lib/ghc-${{ version }}/lib/private/libiconv_compat.dylib
         
         - if: unix
           then:
