@@ -22,6 +22,12 @@ source:
 
 build:
   number: 0
+  dynamic_linking:
+    binary_relocation:
+      - ghc-bootstrap/lib/${{ version }}/bin/*
+  prefix_detection:
+    ignore:
+      - ghc-bootstrap/**/*.so
   # We will not need x-compiled ghc-bootstrap
   skip: aarch64 or ppc64le or arm64
 
@@ -37,9 +43,11 @@ requirements:
     - if: linux
       then:
         - ncurses <6,>=5
+        - patchelf
 
     - if: unix
       then:
+        - coreutils
         - file
         - make
       else:
@@ -52,9 +60,9 @@ requirements:
         - m2-tar
         - m2-which
   host:
-    - if: linux
-      then:
-        - gmp
+    - gmp
+    - libffi
+    - libiconv
     - if: not unix
       then: binutils
     
@@ -125,15 +133,13 @@ tests:
           then: binutils
 
   - script:
-      - printf 'main = putStrLn "Hello conda-forge"\n' > hello.hs
       - if: unix
         then: |
           ${PREFIX}/ghc-bootstrap/bin/ghc testing/hello.hs -o hello && ./hello
           ${PREFIX}/ghc-bootstrap/bin/ghc testing/signal_test.hs -o signal_test && ./signal_test
           ${PREFIX}/ghc-bootstrap/bin/ghc testing/iconv_test.hs -o iconv_test && ./iconv_test
         else: |
-          echo main = putStrLn "Hello conda-forge" > hello.hs
-          CALL %PREFIX%\ghc-bootstrap\bin\ghc.exe hello.hs
+          CALL %PREFIX%\ghc-bootstrap\bin\ghc.exe testing/hello.hs -o hello.exe
           hello.exe
     files:
       recipe:
