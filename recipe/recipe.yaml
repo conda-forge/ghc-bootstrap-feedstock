@@ -114,8 +114,8 @@ tests:
 
             - ghc-bootstrap/bin/windres.bat
 
-            - ghc-bootstrap/settings
-            - ghc-bootstrap/package.conf.d/**
+            - ghc-bootstrap/lib/settings
+            - ghc-bootstrap/lib/package.conf.d/**
 
             - ghc-bootstrap/mingw/bin/__unused__
             - ghc-bootstrap/mingw/include/__unused__
