@@ -167,10 +167,8 @@ if [[ ! -d bootstrap-ghc ]]; then
       fi
     done
     echo " done"
-    
-    # Fine tune RPATHs
-    fine_tune_linux_rpaths
-
+  fi
+  
   # Verify sysroot compatibility
   echo "Verify sysroot compatibility"
   printf 'import System.Posix.Signals\nmain = installHandler sigTERM Default Nothing >> putStrLn "Signal test"\n' > signal_test.hs

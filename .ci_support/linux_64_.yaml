@@ -20,6 +20,8 @@ gmp:
 - '6'
 libffi:
 - '3.5'
+libiconv:
+- '1'
 target_platform:
 - linux-64
 zip_keys:
