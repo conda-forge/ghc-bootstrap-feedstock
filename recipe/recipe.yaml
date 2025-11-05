@@ -102,6 +102,7 @@ tests:
             - ghc-bootstrap/lib/ghc-${{ version }}/lib/private/libiconv_compat.dylib
         
         - if: not unix
+          then:
             - ghc-bootstrap/bin/ghc-iserv-ghc-${{ version }}.exe
             - ghc-bootstrap/bin/ghc-iserv-prof-ghc-${{ version }}.exe
             - ghc-bootstrap/bin/ghc-iserv-prof.exe
