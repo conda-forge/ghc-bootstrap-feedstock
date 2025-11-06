@@ -2,84 +2,76 @@
 setlocal enabledelayedexpansion
 
 REM Windows CMD script to call windres with appropriate preprocessor
-REM Fixes GHC's malformed --preprocessor arguments by parsing and reformatting them
+REM GHC passes malformed --preprocessor arguments, so we strip them and rebuild
 
-where windres.exe >nul 2>&1
-if !errorlevel! == 0 (
-    set WINDRES_CMD=windres.exe
+REM Find windres executable
+where windres.exe 2>nul >nul
+if %errorlevel% == 0 (
+    set "WINDRES_CMD=windres.exe"
 ) else (
-    set WINDRES_CMD=%CONDA_PREFIX%\Library\x86_64-w64-mingw32\bin\windres.exe
+    set "WINDRES_CMD=%CONDA_PREFIX%\Library\x86_64-w64-mingw32\bin\windres.exe"
     if not exist "!WINDRES_CMD!" (
-        echo ERROR: windres.exe not found in PATH or conda environment
+        echo ERROR: windres.exe not found
         exit /b 1
     )
 )
 
-REM Parse arguments from GHC and fix malformed --preprocessor option
-set "FIXED_ARGS="
-set "FOUND_PREPROCESSOR=0"
+REM Detect preprocessor from CC or environment
+set "PREPROC_CMD="
+set "PREPROC_ARGS="
+
+if defined CC (
+    set "PREPROC_CMD=%CC%"
+    REM Detect compiler type and set appropriate args
+    echo %CC% | find /i "gcc" 2>nul >nul && (
+        set "PREPROC_ARGS=-E -xc-header -DRC_INVOKED"
+    )
+    echo %CC% | find /i "clang" 2>nul >nul && (
+        set "PREPROC_ARGS=-E -xc-header -DRC_INVOKED"
+    )
+    echo %CC% | find /i "cl.exe" 2>nul >nul && (
+        set "PREPROC_ARGS=/EP /TC"
+    )
+)
+
+REM Build clean arguments list, filtering out malformed --preprocessor
+set "CLEAN_ARGS="
 
 :parse_loop
 if "%~1"=="" goto :done_parsing
 
-REM Check if this is the malformed --preprocessor argument
-echo %~1 | findstr /b /c:"--preprocessor=" >nul
+REM Skip any --preprocessor argument (we'll add our own)
+set "ARG=%~1"
+echo !ARG! | find "--preprocessor" 2>nul >nul
 if !errorlevel! == 0 (
-    REM Extract the full --preprocessor argument value (may span multiple tokens due to quotes)
-    set "PREPROC_ARG=%~1"
-
-    REM Check if the argument contains quotes (malformed format from GHC)
-    echo !PREPROC_ARG! | findstr "\"" >nul
-    if !errorlevel! == 0 (
-        REM Parse malformed format: --preprocessor="cmd" "arg1" "arg2" ...
-        REM Extract command (first quoted string)
-        for /f "tokens=1* delims==" %%a in ("!PREPROC_ARG!") do (
-            set "PREP_VALUE=%%b"
-        )
-
-        REM Remove quotes and extract command
-        set "PREP_VALUE=!PREP_VALUE:"=!"
-
-        REM Split into command and args
-        for /f "tokens=1,*" %%a in ("!PREP_VALUE!") do (
-            set "PREP_CMD=%%a"
-            set "PREP_ARGS=%%b"
-        )
-
-        REM Build proper windres arguments
-        set "FIXED_ARGS=!FIXED_ARGS! --preprocessor=!PREP_CMD!"
-
-        REM Add each argument as separate --preprocessor-arg
-        for %%a in (!PREP_ARGS!) do (
-            set "ARG=%%a"
-            set "ARG=!ARG:"=!"
-            set "FIXED_ARGS=!FIXED_ARGS! --preprocessor-arg=!ARG!"
-        )
-
-        set "FOUND_PREPROCESSOR=1"
-    ) else (
-        REM Already properly formatted, pass through
-        set "FIXED_ARGS=!FIXED_ARGS! %~1"
-    )
-) else (
-    REM Not a preprocessor argument, pass through
-    set "FIXED_ARGS=!FIXED_ARGS! %~1"
+    REM Skip this malformed argument
+    shift
+    goto :parse_loop
 )
 
+REM Keep all other arguments
+set "CLEAN_ARGS=!CLEAN_ARGS! %~1"
 shift
 goto :parse_loop
 
 :done_parsing
 
-REM If no preprocessor was specified in arguments, add one based on CC
-if !FOUND_PREPROCESSOR! == 0 (
-    if defined CC (
-        set "FIXED_ARGS=--preprocessor=%CC% !FIXED_ARGS!"
+REM Build final windres command with proper preprocessor
+if defined PREPROC_CMD (
+    set "FINAL_ARGS=--preprocessor=!PREPROC_CMD!"
+
+    REM Add each preprocessor argument separately
+    for %%a in (!PREPROC_ARGS!) do (
+        set "FINAL_ARGS=!FINAL_ARGS! --preprocessor-arg=%%a"
     )
+
+    REM Add the cleaned arguments
+    set "FINAL_ARGS=!FINAL_ARGS! !CLEAN_ARGS!"
+) else (
+    REM No preprocessor specified, just use cleaned args
+    set "FINAL_ARGS=!CLEAN_ARGS!"
 )
 
-REM Call windres with fixed arguments
-%WINDRES_CMD% !FIXED_ARGS!
-set EXITCODE=!errorlevel!
-
-exit /b !EXITCODE!
+REM Execute windres with corrected arguments
+%WINDRES_CMD% !FINAL_ARGS!
+exit /b %errorlevel%
