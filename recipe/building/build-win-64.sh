@@ -1,6 +1,15 @@
 #!/usr/bin/env bash
 set -eu
 
+_topdir="${GHC_INSTALLDIR}/lib"
+settings_topdir="\\\$topdir/../.."
+settings_mingw="\\\$topdir/../mingw"
+
+_privatedir="${_topdir}/private"
+settings_private="\\\$topdir/private"
+
+mkdir -p "${_privatedir}"
+
 pushd bootstrap-ghc 2>/dev/null || exit 1
   tar cf - ./* | (cd "${GHC_INSTALLDIR}" || exit; tar xf -)
 popd 2>/dev/null || exit 1
@@ -9,38 +18,39 @@ popd 2>/dev/null || exit 1
 echo "Building CRT compatibility shim..."
 x86_64-w64-mingw32-gcc.exe -c -D_CRT_SECURE_NO_WARNINGS -O2 "${RECIPE_DIR}"/building/crt_compat.c -o "${GHC_INSTALLDIR}"/lib/crt_compat.o
 x86_64-w64-mingw32-ar.exe rcs "${GHC_INSTALLDIR}"/lib/libcrt_compat.a "${GHC_INSTALLDIR}"/lib/crt_compat.o
+rm "${GHC_INSTALLDIR}"/lib/crt_compat.o
 echo "CRT compatibility library created at ${GHC_INSTALLDIR}/lib/libcrt_compat.a"
 ls -lh "${GHC_INSTALLDIR}"/lib/libcrt_compat.a
 
 settings_file=$(find "${GHC_INSTALLDIR}" -name settings)
 
 # Reassign mingw references to conda Mingw
-perl -i -pe 's#\$topdir/../mingw//bin/(llvm-)?##' "${settings_file}"
-perl -i -pe 's#-I\$topdir/../mingw//include#-I\$topdir/../../Library/include#g' "${settings_file}"
-perl -i -pe 's#-L\$topdir/../mingw//lib#-L\$topdir/../../Library/lib#g' "${settings_file}"
-perl -i -pe 's#-L\$topdir/../mingw//x86_64-w64-mingw32/lib#-L\$topdir/../../Library/bin -L\$topdir/../../Library/x86_64-w64-mingw32/sysroot/usr/lib -Wl,-rpath,\$topdir/../../Library/x86_64-w64-mingw32/sysroot/usr/lib#g' "${settings_file}"
+perl -i -pe "s#${settings_mingw}/bin/(llvm-)?##" "${settings_file}"
+perl -i -pe "s#-I${settings_mingw}/include#-I${settings_topdir}/Library/include#g" "${settings_file}"
+perl -i -pe "s#-L${settings_mingw}/lib#-L${settings_topdir}/Library/lib#g" "${settings_file}"
+perl -i -pe "s#-L${settings_mingw}/x86_64-w64-mingw32/lib#-L${settings_topdir}/Library/bin -L${settings_topdir}/Library/x86_64-w64-mingw32/sysroot/usr/lib -Wl,-rpath,${settings_topdir}/Library/x86_64-w64-mingw32/sysroot/usr/lib#g" "${settings_file}"
 
 # Add Windows-specific compiler flags to settings
-perl -i -pe 's/("C compiler command", ")([^"]*)"/\1x86_64-w64-mingw32-gcc.exe"/g' "${settings_file}"
-perl -i -pe 's/("C\+\+ compiler command", ")([^"]*)"/\1x86_64-w64-mingw32-g++.exe"/g' "${settings_file}"
+perl -i -pe 's/(C compiler command", ")([^"]*)"/\1x86_64-w64-mingw32-gcc.exe"/g' "${settings_file}"
+perl -i -pe 's/(C\+\+ compiler command", ")([^"]*)"/\1x86_64-w64-mingw32-g++.exe"/g' "${settings_file}"
 perl -i -pe 's/(CPP command", ")([^"]*)"/\1x86_64-w64-mingw32-gcc.exe"/g' "${settings_file}"
-perl -i -pe 's/("C compiler link flags", ")([^"]*)"/\1-fuse-ld=bfd -Wl,--enable-auto-import -Wl,--image-base=0x400000 -Wl,--disable-dynamicbase -Wl,--disable-high-entropy-va -L\$topdir\/..\/lib -lcrt_compat"/g' "${settings_file}"
+perl -i -pe "s/(C compiler link flags\", \")([^\"]*)\"/\1-fuse-ld=bfd -Wl,--enable-auto-import -Wl,--image-base=0x400000 -Wl,--disable-dynamicbase -Wl,--disable-high-entropy-va -L${settings_private} -lcrt_compat\"/g" "${settings_file}"
 
 # Also add to ld flags for direct linker invocation
-perl -i -pe 's/("ld flags", ")([^"]*)"/\1-L\$topdir\/..\/lib \2"/g' "${settings_file}"
+perl -i -pe "s/(ld flags\", \")([^\"]*)\"/\1-L${settings_private} \2\"/g" "${settings_file}"
 
 # Update GHC settings for Windows toolchain compatibility
-perl -i -pe 's/("ar command", ")([^"]*)"/\1x86_64-w64-mingw32-ar.exe"/g' "${settings_file}"
-perl -i -pe 's/("ar flags", ")([^"]*)"/\1qc"/g' "${settings_file}"
-perl -i -pe 's/("ar supports -L", ")([^"]*)"/\1NO"/g' "${settings_file}"
+perl -i -pe 's/(ar command", ")([^"]*)"/\1x86_64-w64-mingw32-ar.exe"/g' "${settings_file}"
+perl -i -pe 's/(ar flags", ")([^"]*)"/\1qc"/g' "${settings_file}"
+perl -i -pe 's/(ar supports -L", ")([^"]*)"/\1NO"/g' "${settings_file}"
 
 # Configure ranlib
-perl -i -pe 's/("ranlib command", ")([^"]*)"/\1x86_64-w64-mingw32-ranlib.exe"/g' "${settings_file}"
+perl -i -pe 's/(ranlib command", ")([^"]*)"/\1x86_64-w64-mingw32-ranlib.exe"/g' "${settings_file}"
   
 # Force use of GNU ld instead of lld to avoid relocation type 0xe errors
-perl -i -pe 's/("Merge objects command", ")([^"]*)"/\1x86_64-w64-mingw32-ld.exe"/g' "${settings_file}"
-perl -i -pe 's/("Merge objects flags", ")([^"]*)"/\1-r"/g' "${settings_file}"
-perl -i -pe 's/("Merge objects supports response files", ")([^"]*)"/\1YES"/g' "${settings_file}"
+perl -i -pe 's/(Merge objects command", ")([^"]*)"/\1x86_64-w64-mingw32-ld.exe"/g' "${settings_file}"
+perl -i -pe 's/(Merge objects flags", ")([^"]*)"/\1-r"/g' "${settings_file}"
+perl -i -pe 's/(Merge objects supports response files", ")([^"]*)"/\1YES"/g' "${settings_file}"
 
 # Remove clang compiler options
 perl -i -pe 's/--rtlib=compiler-rt//g' "${settings_file}"
