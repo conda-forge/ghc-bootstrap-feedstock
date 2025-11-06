@@ -95,12 +95,18 @@ goto :run_windres_default
 :run_windres
 echo Using preprocessor: %PREPROCESSOR_CMD% %PREPROCESSOR_ARGS%
 
-REM Set environment variables for windres (windres will use these automatically)
+REM Set CC so windres can derive the preprocessor from it
+REM Do NOT set CPP with arguments - windres adds its own arguments
 set CC=%PREPROCESSOR_CMD%
-set CPP=%PREPROCESSOR_CMD% %PREPROCESSOR_ARGS%
 
-REM Call windres (it will use CC and CPP environment variables)
-%WINDRES_CMD% %*
+REM Call windres with explicit preprocessor options
+REM Split PREPROCESSOR_ARGS into individual --preprocessor-arg flags
+set WINDRES_ARGS=--preprocessor=%PREPROCESSOR_CMD%
+for %%a in (%PREPROCESSOR_ARGS%) do (
+    set WINDRES_ARGS=!WINDRES_ARGS! --preprocessor-arg=%%a
+)
+
+%WINDRES_CMD% !WINDRES_ARGS! %*
 goto :end
 
 :run_windres_default
