@@ -22,21 +22,23 @@ static void __attribute__((constructor)) init_environ(void) {
 }
 
 /*
- * Legacy __iob_func for old code expecting FILE* array
+ * Legacy __iob_func for old code expecting FILE array
+ * Returns pointer to array of stdin/stdout/stderr
  * Modern UCRT doesn't expose __iob directly
  */
-static FILE *iob_compat[3];
+static FILE iob_compat[3];
 static int iob_initialized = 0;
 
 __attribute__((dllexport))
 FILE *__iob_func(void) {
     if (!iob_initialized) {
-        iob_compat[0] = stdin;
-        iob_compat[1] = stdout;
-        iob_compat[2] = stderr;
+        /* Copy the FILE structures */
+        if (stdin) iob_compat[0] = *stdin;
+        if (stdout) iob_compat[1] = *stdout;
+        if (stderr) iob_compat[2] = *stderr;
         iob_initialized = 1;
     }
-    return iob_compat;
+    return iob_compat;  /* Returns pointer to first element of array */
 }
 
 #ifdef __cplusplus
