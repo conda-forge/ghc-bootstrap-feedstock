@@ -3,8 +3,11 @@
  * Provides legacy MSVCRT symbols for UCRT compatibility
  */
 
+#define _CRT_RAND_S  /* Prevent redefinition conflicts */
 #include <stdio.h>
 #include <stdlib.h>
+#include <wchar.h>
+#include <stdarg.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -14,7 +17,6 @@ extern "C" {
  * Legacy __imp__environ symbol
  * UCRT uses _get_environ() instead of direct access to _environ
  */
-__attribute__((dllexport))
 char **__imp__environ = NULL;
 
 static void __attribute__((constructor)) init_environ(void) {
@@ -29,7 +31,6 @@ static void __attribute__((constructor)) init_environ(void) {
 static FILE iob_compat[3];
 static int iob_initialized = 0;
 
-__attribute__((dllexport))
 FILE *__iob_func(void) {
     if (!iob_initialized) {
         /* Copy the FILE structures */
@@ -39,6 +40,25 @@ FILE *__iob_func(void) {
         iob_initialized = 1;
     }
     return iob_compat;  /* Returns pointer to first element of array */
+}
+
+/*
+ * swprintf_s wrapper - GHC libraries expect this symbol
+ * Redirect to standard vswprintf
+ */
+int swprintf_s(wchar_t *buffer, size_t sizeOfBuffer, const wchar_t *format, ...) {
+    va_list args;
+    int ret;
+
+    if (!buffer || sizeOfBuffer == 0) {
+        return -1;
+    }
+
+    va_start(args, format);
+    ret = vswprintf(buffer, sizeOfBuffer, format, args);
+    va_end(args);
+
+    return ret;
 }
 
 #ifdef __cplusplus
