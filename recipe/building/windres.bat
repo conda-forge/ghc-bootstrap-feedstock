@@ -61,8 +61,6 @@ if defined PREPROC_CMD (
     set "FINAL=!OTHER_ARGS!"
 )
 
-echo DEBUG: Calling windres with: !FINAL!
-
 REM Execute
 !WINDRES_CMD! !FINAL!
 exit /b %errorlevel%
