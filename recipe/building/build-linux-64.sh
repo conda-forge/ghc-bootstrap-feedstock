@@ -31,20 +31,25 @@ perl -i -pe 's#($ENV{BUILD_PREFIX}|$ENV{PREFIX})/bin/##g' "${settings_file}"
 
 # Add system libs
 perl -i -pe "s#(C compiler link flags\", \")([^\"]*)\"#\1\2 -Wl,-L${settings_private} -Wl,-rpath ${settings_private} -Wl,-L${settings_topdir}/lib -Wl,-rpath,${settings_topdir}/lib -Wl,-rpath-link,${settings_topdir}/lib\"#g" "${settings_file}"
-perl -i -pe "s#(ld flags\", \")([^\"]*)\"#\1\2 ${LDFLAGS} -L${settings_private} -rpath ${settings_private} -L"${settings_topdir}"/lib -rpath ${settings_topdir}/lib -rpath-link ${settings_topdir}/lib\"#g" "${settings_file}"
+perl -i -pe "s#(ld flags\", \")([^\"]*)\"#\1\2 -L${settings_private} -rpath ${settings_private} -L"${settings_topdir}"/lib -rpath ${settings_topdir}/lib -rpath-link ${settings_topdir}/lib\"#g" "${settings_file}"
 
 # Add sysroot
-perl -i -pe "s#(C compiler flags\", \")([^\"]*)\"#\1\2 ${CFLAGS} -I${settings_topdir}/x86_64-conda-linux-gnu/sysroot/usr/include\"#g" "${settings_file}"
-perl -i -pe "s#(C\+\+ compiler flags\", \")([^\"]*)\"#\1\2 ${CXXFLAGS} -I${settings_topdir}/x86_64-conda-linux-gnu/sysroot/usr/include\"#g" "${settings_file}"
+perl -i -pe "s#(C compiler flags\", \")([^\"]*)\"#\1\2 -I${settings_topdir}/x86_64-conda-linux-gnu/sysroot/usr/include\"#g" "${settings_file}"
+perl -i -pe "s#(C\+\+ compiler flags\", \")([^\"]*)\"#\1\2 -I${settings_topdir}/x86_64-conda-linux-gnu/sysroot/usr/include\"#g" "${settings_file}"
 perl -i -pe "s#(C compiler link flags\", \")([^\"]*)\"#\1\2 -Wl,-L${settings_topdir}/x86_64-conda-linux-gnu/sysroot/lib64 -Wl,-L${settings_topdir}/x86_64-conda-linux-gnu/sysroot/usr/lib64\"#g" "${settings_file}"
 perl -i -pe "s#(ld flags\", \")([^\"]*)\"#\1\2 -L${settings_topdir}/x86_64-conda-linux-gnu/sysroot/lib64 -L${settings_topdir}/x86_64-conda-linux-gnu/sysroot/usr/lib64\"#g" "${settings_file}"
+
+# # Add FLAGS
+# perl -i -pe "s#(C compiler flags\", \")([^\"]*)\"#\1\2 ${CFLAGS}\"#g" "${settings_file}"
+# perl -i -pe "s#(C\+\+ compiler flags\", \")([^\"]*)\"#\1\2 ${CXXFLAGS}\"#g" "${settings_file}"
+# perl -i -pe "s#(ld flags\", \")([^\"]*)\"#\1\2 ${LDFLAGS}\"#g" "${settings_file}"
 
 # Remove no-pie
 perl -i -pe "s#(compiler supports -no-pie\", \")[^\"]*\"#\1YES\"#g" "${settings_file}"
 
 echo "Bundling ncurses 5 libraries privately"
 # Copy ncurses 5 shared libraries to private location
-cp "${BUILD_PREFIX}/lib/lib{ncurses,tinfo,tinfow}.so.5"* "${_topdir}"/private/ 2>/dev/null
+cp "${BUILD_PREFIX}"/lib/lib{ncurses,tinfo,tinfow}.so.5* "${_topdir}"/private/ 2>/dev/null
 
 # Update rpath for GHC binaries to use private libraries first
 find "${_topdir}"/bin -name "ghc*" -type f -executable | while read -r binary; do

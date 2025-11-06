@@ -35,10 +35,10 @@ perl -i -pe 's/(C compiler link flags", ")([^"]*)"/\1-fuse-ld=bfd -Wl,--enable-a
 # Also add to ld flags for direct linker invocation
 perl -i -pe 's/(ld flags", ")([^"]*)"/\1 -L\$topdir\/private --whole-archive \$topdir\/private\/libcrt_compat.a --no-whole-archive \2"/g' "${settings_file}"
 
-# Add conda CFLAGS/CXXFLAGS/LDFLAGS
-perl -i -pe "s#(C compiler flags\", \")([^\"]*)\"#\1\2 ${CFLAGS}\"#g" "${settings_file}"
-perl -i -pe "s#(C\+\+ compiler flags\", \")([^\"]*)\"#\1\2 ${CXXFLAGS}\"#g" "${settings_file}"
-perl -i -pe "s#(ld flags\", \")([^\"]*)\"#\1\2 ${LDFLAGS}\"#g" "${settings_file}"
+# # Add conda CFLAGS/CXXFLAGS/LDFLAGS (use Perl ENV to avoid backslash escaping issues)
+# perl -i -pe 's/(C compiler flags", ")([^"]*)"/\1\2 $ENV{CFLAGS}"/g' "${settings_file}"
+# perl -i -pe 's/(C\+\+ compiler flags", ")([^"]*)"/\1\2 $ENV{CXXFLAGS}"/g' "${settings_file}"
+# perl -i -pe 's/(ld flags", ")([^"]*)"/\1\2 $ENV{LDFLAGS}"/g' "${settings_file}"
 
 # Update GHC settings for Windows toolchain compatibility
 perl -i -pe 's/(ar command", ")([^"]*)"/\1x86_64-w64-mingw32-ar.exe"/g' "${settings_file}"

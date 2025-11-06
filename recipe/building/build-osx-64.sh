@@ -21,10 +21,13 @@ settings_file=$(find "${_topdir}" -name settings)
 perl -i -pe 's#($ENV{BUILD_PREFIX}|$ENV{PREFIX})/bin/##g' "${settings_file}"
 
 # Add system libs
-perl -i -pe "s#(C compiler flags\", \")([^\"]*)\"#\1\2 ${CFLAGS}\"#g" "${settings_file}"
-perl -i -pe "s#(C\+\+ compiler flags\", \")([^\"]*)\"#\1\2 ${CXXFLAGS}\"#g" "${settings_file}"
 perl -i -pe "s#(C compiler link flags\", \")([^\"]*)\"#\1\2 -Wl,-L${settings_private} -Wl,-rpath ${settings_private} -Wl,-L${settings_topdir}/lib -Wl,-rpath,${settings_topdir}/lib\"#g" "${settings_file}"
-perl -i -pe "s#(ld flags\", \")([^\"]*)\"#\1\2 ${LDFLAGS} -L${settings_private} -rpath ${settings_private} -L"${settings_topdir}"/lib -rpath ${settings_topdir}/lib\"#g" "${settings_file}"
+perl -i -pe "s#(ld flags\", \")([^\"]*)\"#\1\2 -L${settings_private} -rpath ${settings_private} -L"${settings_topdir}"/lib -rpath ${settings_topdir}/lib\"#g" "${settings_file}"
+
+# # Add FLAGS
+# perl -i -pe "s#(C compiler flags\", \")([^\"]*)\"#\1\2 ${CFLAGS}\"#g" "${settings_file}"
+# perl -i -pe "s#(C\+\+ compiler flags\", \")([^\"]*)\"#\1\2 ${CXXFLAGS}\"#g" "${settings_file}"
+# perl -i -pe "s#(ld flags\", \")([^\"]*)\"#\1\2 ${LDFLAGS}\"#g" "${settings_file}"
 
 # We enforce prioritizing conda libs and create a stub for missing symbols in libiconv
 ${CC} -dynamiclib -o "${_topdir}"/private/libiconv_compat.dylib "${RECIPE_DIR}"/building/osx_iconv_compat.c \
