@@ -5,6 +5,11 @@ pushd bootstrap-ghc 2>/dev/null || exit 1
   tar cf - ./* | (cd "${GHC_INSTALLDIR}" || exit; tar xf -)
 popd 2>/dev/null || exit 1
 
+# Build CRT compatibility shim for legacy MSVCRT symbols
+echo "Building CRT compatibility shim..."
+x86_64-w64-mingw32-gcc.exe -c "${RECIPE_DIR}"/building/crt_compat.c -o "${GHC_INSTALLDIR}"/lib/crt_compat.o
+x86_64-w64-mingw32-ar.exe rcs "${GHC_INSTALLDIR}"/lib/libcrt_compat.a "${GHC_INSTALLDIR}"/lib/crt_compat.o
+
 settings_file=$(find "${GHC_INSTALLDIR}" -name settings)
 
 # Reassign mingw references to conda Mingw
@@ -17,7 +22,7 @@ perl -i -pe 's#-L\$topdir/../mingw//x86_64-w64-mingw32/lib#-L\$topdir/../../Libr
 perl -i -pe 's/("C compiler command", ")([^"]*)"/\1x86_64-w64-mingw32-gcc.exe"/g' "${settings_file}"
 perl -i -pe 's/("C\+\+ compiler command", ")([^"]*)"/\1x86_64-w64-mingw32-g++.exe"/g' "${settings_file}"
 perl -i -pe 's/(CPP command", ")([^"]*)"/\1x86_64-w64-mingw32-gcc.exe"/g' "${settings_file}"
-perl -i -pe 's/("C compiler link flags", ")([^"]*)"/\1-fuse-ld=bfd -Wl,--enable-auto-import -Wl,--image-base=0x400000 -Wl,--disable-dynamicbase -Wl,--disable-high-entropy-va -lmsvcrt"/g' "${settings_file}"
+perl -i -pe 's/("C compiler link flags", ")([^"]*)"/\1-fuse-ld=bfd -Wl,--enable-auto-import -Wl,--image-base=0x400000 -Wl,--disable-dynamicbase -Wl,--disable-high-entropy-va -L\$topdir\/..\/lib -lcrt_compat"/g' "${settings_file}"
 
 # Update GHC settings for Windows toolchain compatibility
 perl -i -pe 's/("ar command", ")([^"]*)"/\1x86_64-w64-mingw32-ar.exe"/g' "${settings_file}"
