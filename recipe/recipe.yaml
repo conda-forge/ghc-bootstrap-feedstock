@@ -59,13 +59,17 @@ requirements:
         - m2-grep
         - m2-tar
         - m2-which
-  host:
-    - gmp
-    - libffi
-    - libiconv
-    - if: not unix
-      then: binutils
-    
+  # host:
+  #   - gmp
+  #   - libffi
+  #   - libiconv
+  #   - if: not unix
+  #     then: binutils
+  # ignore_run_exports:
+  #   from_package:
+  #     - gmp
+  #     - libffi
+  #     - libiconv
 
 tests:
   - package_contents:
@@ -116,6 +120,7 @@ tests:
 
             - ghc-bootstrap/lib/settings
             - ghc-bootstrap/lib/package.conf.d/**
+            - ghc-bootstrap/lib/private/libcrt_compat.a
 
             - ghc-bootstrap/mingw/bin/__unused__
             - ghc-bootstrap/mingw/include/__unused__
@@ -126,8 +131,8 @@ tests:
       - if: unix
         then: ${PREFIX}/ghc-bootstrap/bin/ghc --version
         else:
-          - CALL %PREFIX%/ghc-bootstrap/bin/ghc.exe --version
           - CALL %PREFIX%/ghc-bootstrap/bin/windres.bat --help
+          - CALL %PREFIX%/ghc-bootstrap/bin/ghc.exe -v --version
     requirements:
       run:
         - ${{ compiler('c') }}
@@ -138,9 +143,11 @@ tests:
   - script:
       - if: unix
         then: |
-          ${PREFIX}/ghc-bootstrap/bin/ghc testing/hello.hs -o hello && ./hello
-          ${PREFIX}/ghc-bootstrap/bin/ghc testing/signal_test.hs -o signal_test && ./signal_test
-          ${PREFIX}/ghc-bootstrap/bin/ghc testing/iconv_test.hs -o iconv_test && ./iconv_test
+          ${PREFIX}/ghc-bootstrap/bin/ghc testing/hello.hs -o hello && ./hello && rm -f testing/*.o
+          ${PREFIX}/ghc-bootstrap/bin/ghc testing/signal_test.hs -o signal_test && ./signal_test && rm -f testing/*.o
+          ${PREFIX}/ghc-bootstrap/bin/ghc testing/iconv_test.hs -o iconv_test && ./iconv_test && rm -f testing/*.o
+          ${PREFIX}/ghc-bootstrap/bin/ghc -dynamic testing/hello.hs -o hello_dy && ./hello_dy && rm -f testing/*.o
+          ${PREFIX}/ghc-bootstrap/bin/ghc -threaded testing/hello.hs -o hello_th && ./hello_th && rm -f testing/*.o
         else: |
           CALL %PREFIX%\ghc-bootstrap\bin\ghc.exe testing/hello.hs -o hello.exe
           hello.exe
