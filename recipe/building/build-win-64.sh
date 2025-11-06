@@ -16,11 +16,11 @@ popd 2>/dev/null || exit 1
 
 # Build CRT compatibility shim for legacy MSVCRT symbols
 echo "Building CRT compatibility shim..."
-x86_64-w64-mingw32-gcc.exe -c -D_CRT_SECURE_NO_WARNINGS -O2 "${RECIPE_DIR}"/building/crt_compat.c -o "${GHC_INSTALLDIR}"/lib/crt_compat.o
-x86_64-w64-mingw32-ar.exe rcs "${GHC_INSTALLDIR}"/lib/libcrt_compat.a "${GHC_INSTALLDIR}"/lib/crt_compat.o
-rm "${GHC_INSTALLDIR}"/lib/crt_compat.o
-echo "CRT compatibility library created at ${GHC_INSTALLDIR}/lib/libcrt_compat.a"
-ls -lh "${GHC_INSTALLDIR}"/lib/libcrt_compat.a
+x86_64-w64-mingw32-gcc.exe -c -D_CRT_SECURE_NO_WARNINGS -O2 "${RECIPE_DIR}"/building/crt_compat.c -o "${_privatedir}"/crt_compat.o
+x86_64-w64-mingw32-ar.exe rcs "${_privatedir}"/libcrt_compat.a "${_privatedir}"/crt_compat.o
+rm "${_privatedir}"/crt_compat.o
+echo "CRT compatibility library created at ${_privatedir}/libcrt_compat.a"
+ls -lh "${_privatedir}"/libcrt_compat.a
 
 settings_file=$(find "${GHC_INSTALLDIR}" -name settings)
 
@@ -34,10 +34,10 @@ perl -i -pe "s#-L${settings_mingw}/x86_64-w64-mingw32/lib#-L${settings_topdir}/L
 perl -i -pe 's/(C compiler command", ")([^"]*)"/\1x86_64-w64-mingw32-gcc.exe"/g' "${settings_file}"
 perl -i -pe 's/(C\+\+ compiler command", ")([^"]*)"/\1x86_64-w64-mingw32-g++.exe"/g' "${settings_file}"
 perl -i -pe 's/(CPP command", ")([^"]*)"/\1x86_64-w64-mingw32-gcc.exe"/g' "${settings_file}"
-perl -i -pe "s/(C compiler link flags\", \")([^\"]*)\"/\1-fuse-ld=bfd -Wl,--enable-auto-import -Wl,--image-base=0x400000 -Wl,--disable-dynamicbase -Wl,--disable-high-entropy-va -L${settings_private} -lcrt_compat\"/g" "${settings_file}"
+perl -i -pe 's/(C compiler link flags", ")([^"]*)"/\1-fuse-ld=bfd -Wl,--enable-auto-import -Wl,--image-base=0x400000 -Wl,--disable-dynamicbase -Wl,--disable-high-entropy-va -L\$topdir\/private -lcrt_compat"/g' "${settings_file}"
 
 # Also add to ld flags for direct linker invocation
-perl -i -pe "s/(ld flags\", \")([^\"]*)\"/\1-L${settings_private} \2\"/g" "${settings_file}"
+perl -i -pe 's/(ld flags", ")([^"]*)"/\1-L\$topdir\/private \2"/g' "${settings_file}"
 
 # Update GHC settings for Windows toolchain compatibility
 perl -i -pe 's/(ar command", ")([^"]*)"/\1x86_64-w64-mingw32-ar.exe"/g' "${settings_file}"
