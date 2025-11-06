@@ -61,7 +61,9 @@ requirements:
         - m2-which
   host:
     - if: osx
-      then: libiconv
+      then:
+        - libffi
+        - libiconv
   #   - gmp
   #   - libffi
   #   - libiconv
