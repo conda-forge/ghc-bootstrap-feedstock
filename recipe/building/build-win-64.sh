@@ -6,7 +6,6 @@ settings_topdir="\\\$topdir/../.."
 settings_mingw="\\\$topdir/../mingw"
 
 _privatedir="${_topdir}/private"
-settings_private="\\\$topdir/private"
 
 mkdir -p "${_privatedir}"
 
@@ -34,10 +33,10 @@ perl -i -pe "s#-L${settings_mingw}/x86_64-w64-mingw32/lib#-L${settings_topdir}/L
 perl -i -pe 's/(C compiler command", ")([^"]*)"/\1x86_64-w64-mingw32-gcc.exe"/g' "${settings_file}"
 perl -i -pe 's/(C\+\+ compiler command", ")([^"]*)"/\1x86_64-w64-mingw32-g++.exe"/g' "${settings_file}"
 perl -i -pe 's/(CPP command", ")([^"]*)"/\1x86_64-w64-mingw32-gcc.exe"/g' "${settings_file}"
-perl -i -pe 's/(C compiler link flags", ")([^"]*)"/\1-fuse-ld=bfd -Wl,--enable-auto-import -Wl,--image-base=0x400000 -Wl,--disable-dynamicbase -Wl,--disable-high-entropy-va -L\$topdir\/private -lcrt_compat"/g' "${settings_file}"
+perl -i -pe 's/(C compiler link flags", ")([^"]*)"/\1-fuse-ld=bfd -Wl,--enable-auto-import -Wl,--image-base=0x400000 -Wl,--disable-dynamicbase -Wl,--disable-high-entropy-va -Wl,--whole-archive,\$topdir\/private\/libcrt_compat.a,--no-whole-archive"/g' "${settings_file}"
 
 # Also add to ld flags for direct linker invocation
-perl -i -pe 's/(ld flags", ")([^"]*)"/\1-L\$topdir\/private \2"/g' "${settings_file}"
+perl -i -pe 's/(ld flags", ")([^"]*)"/\1-L\$topdir\/private --whole-archive \$topdir\/private\/libcrt_compat.a --no-whole-archive \2"/g' "${settings_file}"
 
 # Update GHC settings for Windows toolchain compatibility
 perl -i -pe 's/(ar command", ")([^"]*)"/\1x86_64-w64-mingw32-ar.exe"/g' "${settings_file}"
@@ -69,7 +68,7 @@ cat "${settings_file}"
 # Reduce footprint
 rm -rf "${GHC_INSTALLDIR}"/lib/lib
 rm -rf "${GHC_INSTALLDIR}"/lib/doc/html
-rm -rf "${GHC_INSTALLDIR}"/doc/html
+rm -rf "${GHC_INSTALLDIR}"/docs/html
 rm -rf "${GHC_INSTALLDIR}"/mingw
 
 mkdir -p "${GHC_INSTALLDIR}"/mingw/{include,lib,bin,share}
