@@ -1,5 +1,5 @@
 context:
-  version: "9.6.7"
+  version: "9.2.8"
 
 package:
   name: ghc-bootstrap
@@ -9,19 +9,19 @@ source:
   - if: osx
     then:
       url: https://downloads.haskell.org/~ghc/${{ version }}/ghc-${{ version }}-x86_64-apple-darwin.tar.xz
-      sha256: f14fcb0b9be4ae7f6d71f4069cccecb9dce2c8c39a8596afde7e5de171ca03e5
+      sha256: eb78361feaf4277f627cbdc4b849849d09d175d0d878d28433719b7482db27f5
   - if: linux
     then:
       url: https://downloads.haskell.org/~ghc/${{ version }}/ghc-${{ version }}-x86_64-centos7-linux.tar.xz
-      sha256: 0047e4820cac57bcb51f2d3bbdade455ee12e190df3af7ba15654e87752b89e1
+      sha256: 70c3ecbc6457f67ba0e76bd0ca2500bd0edd8262d3236a23422fad7602efa672
   - if: not unix
     then:
       url: https://downloads.haskell.org/~ghc/${{ version }}/ghc-${{ version }}-x86_64-unknown-mingw32.tar.xz
-      sha256: cf0e736ce4c875de0296426ee575eca177acf6b9b5c1dd4881b9fc79681e1d5f
+      sha256: f11c7270839c50fda44f98b54254ae50340bb58b04f8d81ebcbe67a2827bd511
       target_directory: bootstrap-ghc
 
 build:
-  number: 5
+  number: 0
   dynamic_linking:
     binary_relocation:
       - ghc-bootstrap/lib/${{ version }}/bin/*
@@ -36,7 +36,9 @@ requirements:
     - ${{ compiler('c') }}
     - ${{ compiler('cxx') }}
     - ${{ stdlib('c') }}
-    - perl 5.32.1.*
+    - gmp
+    - libffi
+    - perl 5.32.*
 
     - if: linux
       then:
@@ -48,7 +50,6 @@ requirements:
         - coreutils
         - file
         - make
-        - pkg-config
       else:
         - binutils
         - m2-bash
@@ -64,11 +65,17 @@ requirements:
     - libiconv
     - if: not unix
       then: binutils
-    
+  # ignore_run_exports:
+  #   from_package:
+  #     - gmp
+  #     - libffi
+  #     - libiconv
 
 tests:
   - package_contents:
       files:
+        - etc/conda/activate.d/ghc-bootstrap_activate${{ ".sh" if unix else ".bat" }}
+        
         - ghc-bootstrap/bin/ghc${{ "" if unix else ".exe" }}
         - ghc-bootstrap/bin/ghc-${{ version }}${{ "" if unix else ".exe" }}
         - ghc-bootstrap/bin/ghc-pkg-${{ version }}${{ "" if unix else ".exe" }}
@@ -77,29 +84,29 @@ tests:
         - ghc-bootstrap/bin/ghci${{ "" if unix else ".exe" }}
         - ghc-bootstrap/bin/haddock-ghc-${{ version }}${{ "" if unix else ".exe" }}
         - ghc-bootstrap/bin/haddock${{ "" if unix else ".exe" }}
-        - ghc-bootstrap/bin/hp2ps-ghc-${{ version }}${{ "" if unix else ".exe" }}
         - ghc-bootstrap/bin/hp2ps${{ "" if unix else ".exe" }}
-        - ghc-bootstrap/bin/hpc-ghc-${{ version }}${{ "" if unix else ".exe" }}
         - ghc-bootstrap/bin/hpc${{ "" if unix else ".exe" }}
-        - ghc-bootstrap/bin/hsc2hs-ghc-${{ version }}${{ "" if unix else ".exe" }}
         - ghc-bootstrap/bin/hsc2hs${{ "" if unix else ".exe" }}
         - ghc-bootstrap/bin/runghc-${{ version }}${{ "" if unix else ".exe" }}
         - ghc-bootstrap/bin/runghc${{ "" if unix else ".exe" }}
-        - ghc-bootstrap/bin/runhaskell-${{ version }}${{ "" if unix else ".exe" }}
         - ghc-bootstrap/bin/runhaskell${{ "" if unix else ".exe" }}
         
         - if: linux
           then:
-            - ghc-bootstrap/lib/private/libncurses.so.5
-            - ghc-bootstrap/lib/private/libtinfo.so.5
-            - ghc-bootstrap/lib/private/libtinfow.so.5
-            - ghc-bootstrap/lib/private/ld-2.17.so
-
-        - if: unix
+            - ghc-bootstrap/lib/ghc-${{ version }}/settings
+            - ghc-bootstrap/lib/ghc-${{ version }}/package.conf.d/**
+            - ghc-bootstrap/lib/ghc-${{ version }}/private/libncurses.so.5
+            - ghc-bootstrap/lib/ghc-${{ version }}/private/libtinfo.so.5
+            - ghc-bootstrap/lib/ghc-${{ version }}/private/libtinfow.so.5
+        
+        - if: osx
           then:
             - ghc-bootstrap/lib/ghc-${{ version }}/lib/settings
             - ghc-bootstrap/lib/ghc-${{ version }}/lib/package.conf.d/**
-          else:
+            - ghc-bootstrap/lib/ghc-${{ version }}/lib/private/libiconv_compat.dylib
+        
+        - if: not unix
+          then:
             - ghc-bootstrap/bin/ghc-iserv-ghc-${{ version }}.exe
             - ghc-bootstrap/bin/ghc-iserv-prof-ghc-${{ version }}.exe
             - ghc-bootstrap/bin/ghc-iserv-prof.exe
@@ -113,6 +120,7 @@ tests:
 
             - ghc-bootstrap/lib/settings
             - ghc-bootstrap/lib/package.conf.d/**
+            - ghc-bootstrap/lib/private/libcrt_compat.a
 
             - ghc-bootstrap/mingw/bin/__unused__
             - ghc-bootstrap/mingw/include/__unused__
@@ -123,21 +131,23 @@ tests:
       - if: unix
         then: ${PREFIX}/ghc-bootstrap/bin/ghc --version
         else:
-          - CALL %PREFIX%/ghc-bootstrap/bin/ghc.exe --version
           - CALL %PREFIX%/ghc-bootstrap/bin/windres.bat --help
+          - CALL %PREFIX%/ghc-bootstrap/bin/ghc.exe -v --version
     requirements:
       run:
         - ${{ compiler('c') }}
         - ${{ stdlib('c') }}
-        - if: not unix
-          then: binutils
+        # - if: not unix
+        #   then: binutils
 
   - script:
       - if: unix
         then: |
-          ${PREFIX}/ghc-bootstrap/bin/ghc testing/hello.hs -o hello && ./hello
-          ${PREFIX}/ghc-bootstrap/bin/ghc testing/signal_test.hs -o signal_test && ./signal_test
-          ${PREFIX}/ghc-bootstrap/bin/ghc testing/iconv_test.hs -o iconv_test && ./iconv_test
+          ${PREFIX}/ghc-bootstrap/bin/ghc testing/hello.hs -o hello && ./hello && rm -f testing/*.o
+          ${PREFIX}/ghc-bootstrap/bin/ghc testing/signal_test.hs -o signal_test && ./signal_test && rm -f testing/*.o
+          ${PREFIX}/ghc-bootstrap/bin/ghc testing/iconv_test.hs -o iconv_test && ./iconv_test && rm -f testing/*.o
+          ${PREFIX}/ghc-bootstrap/bin/ghc -dynamic testing/hello.hs -o hello_dy && ./hello_dy && rm -f testing/*.o
+          ${PREFIX}/ghc-bootstrap/bin/ghc -threaded testing/hello.hs -o hello_th && ./hello_th && rm -f testing/*.o
         else: |
           CALL %PREFIX%\ghc-bootstrap\bin\ghc.exe testing/hello.hs -o hello.exe
           hello.exe
@@ -148,8 +158,8 @@ tests:
       run:
         - ${{ compiler('c') }}
         - ${{ stdlib('c') }}
-        - if: not unix
-          then: binutils
+        # - if: not unix
+        #   then: binutils
 
 about:
   homepage: https://haskell.org/ghc/
