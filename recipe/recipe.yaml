@@ -60,26 +60,11 @@ requirements:
         - m2-tar
         - m2-which
   host:
-    - if: osx
-      then:
-        - libffi
-        - libiconv
-  #   - gmp
-  #   - libffi
-  #   - libiconv
-  #   - if: not unix
-  #     then: binutils
-  # ignore_run_exports:
-  #   from_package:
-  #     - gmp
-  #     - libffi
-  #     - libiconv
-  # host:
-  #   - gmp
-  #   - libffi
-  #   - libiconv
-  #   - if: not unix
-  #     then: binutils
+    - gmp
+    - libffi
+    - libiconv
+    - if: not unix
+      then: binutils
   # ignore_run_exports:
   #   from_package:
   #     - gmp
@@ -152,8 +137,8 @@ tests:
       run:
         - ${{ compiler('c') }}
         - ${{ stdlib('c') }}
-        - if: not unix
-          then: binutils
+        # - if: not unix
+        #   then: binutils
 
   - script:
       - if: unix
@@ -173,10 +158,8 @@ tests:
       run:
         - ${{ compiler('c') }}
         - ${{ stdlib('c') }}
-        - gmp
-        - libffi
-        - if: not unix
-          then: binutils
+        # - if: not unix
+        #   then: binutils
 
 about:
   homepage: https://haskell.org/ghc/

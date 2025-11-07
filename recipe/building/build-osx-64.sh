@@ -46,8 +46,7 @@ ghc_test_log="${SRC_DIR}"/_logs/ghc_signal_test.log
 
 # Add BUILD_PREFIX/lib to LD_LIBRARY_PATH for build-time test
 # This helps the linker find libgmp during the build-time verification
-export LD_LIBRARY_PATH="${BUILD_PREFIX}/lib:${LD_LIBRARY_PATH:-}"
-
+export DYLD_LIBRARY_PATH="${BUILD_PREFIX}/lib:${DYLD_LIBRARY_PATH:-}"
 "${GHC_INSTALLDIR}"/bin/ghc -v -L"${BUILD_PREFIX}"/lib -optc-fno-PIE -optl-no-pie signal_test.hs >> "${ghc_test_log}" 2>&1 || {
   cat "${ghc_test_log}"
   exit 1
