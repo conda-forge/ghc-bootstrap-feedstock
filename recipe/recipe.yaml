@@ -1,5 +1,5 @@
 context:
-  version: "9.12.2"
+  version: "9.14.1"
 
 package:
   name: ghc-bootstrap
@@ -9,19 +9,19 @@ source:
   - if: osx
     then:
       url: https://downloads.haskell.org/~ghc/${{ version }}/ghc-${{ version }}-x86_64-apple-darwin.tar.xz
-      sha256: e7a40e39059dd3619d7884b7382f357e79a0f4e430181b805bdd57b3be9a7300
+      sha256: 404b2ceacb2b2092a2f1d9e8f551a72d0bf34d897c0c7baf3e79ffec837a0b72
   - if: linux
     then:
       url: https://downloads.haskell.org/~ghc/${{ version }}/ghc-${{ version }}-x86_64-deb9-linux.tar.xz
-      sha256: 5dcb17f43de256ff651ebfd23f49bb2657543386d2a43257f255bde24ff78e39
+      sha256: 4b3afbf7979349efc48ea26810ae747f14b1ea2af954122fc4df0a406a09c68e
   - if: not unix
     then:
       url: https://downloads.haskell.org/~ghc/${{ version }}/ghc-${{ version }}-x86_64-unknown-mingw32.tar.xz
-      sha256: eccd82af0c7d1d5316f30e0a6dd2d6ff608a4a2a99fbdf5ccb0786c49da59b1d
+      sha256: 4914e262a91a9cb65807ec33b3a2adc884894b1dcc33691d820bb9456f2794ba
       target_directory: bootstrap-ghc
 
 build:
-  number: 7
+  number: 0
   dynamic_linking:
     binary_relocation:
       - ghc-bootstrap/lib/${{ version }}/bin/*
