@@ -32,11 +32,19 @@ pkgs_dirs:
 solver: libmamba
 
 CONDARC
-mv /opt/conda/conda-meta/history /opt/conda/conda-meta/history.$(date +%Y-%m-%d-%H-%M-%S)
-echo > /opt/conda/conda-meta/history
-micromamba install --root-prefix ~/.conda --prefix /opt/conda \
-    --yes --override-channels --channel conda-forge --strict-channel-priority \
-    pip  rattler-build conda-forge-ci-setup=4 "conda-build>=26.3"
+pushd "${FEEDSTOCK_ROOT}"
+arch=$(uname -m)
+if [[ "$arch" == "x86_64" ]]; then
+  arch="64"
+fi
+sed -i.bak -e "s/platforms = .*/platforms = [\"linux-${arch}\"]/" -e "s/# __PLATFORM_SPECIFIC_ENV__ =/docker-build-linux-$arch =/" pixi.toml
+echo "Creating environment"
+PIXI_CACHE_DIR=/opt/conda pixi install --environment docker-build-linux-$arch
+pixi list --environment docker-build-linux-$arch
+echo "Activating environment"
+eval "$(pixi shell-hook --environment docker-build-linux-$arch)"
+mv pixi.toml.bak pixi.toml
+popd
 export CONDA_LIBMAMBA_SOLVER_NO_CHANNELS_FROM_INSTALLED=1
 
 # set up the condarc
@@ -49,9 +57,6 @@ source run_conda_forge_build_setup
 # make the build number clobber
 make_build_number "${FEEDSTOCK_ROOT}" "${RECIPE_ROOT}" "${CONFIG_FILE}"
 
-if [[ "${HOST_PLATFORM}" != "${BUILD_PLATFORM}" ]] && [[ "${HOST_PLATFORM}" != linux-* ]] && [[ "${BUILD_WITH_CONDA_DEBUG:-0}" != 1 ]]; then
-    EXTRA_CB_OPTIONS="${EXTRA_CB_OPTIONS:-} --test skip"
-fi
 
 
 ( endgroup "Configuring conda" ) 2> /dev/null

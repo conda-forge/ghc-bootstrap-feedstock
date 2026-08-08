@@ -1,15 +1,18 @@
+conda_build:
+  error_overlinking: true
 conda_build_tool: rattler-build
+conda_forge_output_validation: true
+conda_install_tool: pixi
 github:
   branch_name: main
   tooling_branch_name: main
-conda_build:
-  error_overlinking: true
-conda_forge_output_validation: true
-test: native_and_emulated
+provider:
+  osx_arm64: default
+test: all
 workflow_settings:
   build_workspace_dir:
-    - os: win
-      value: C:\bld
+  - os: win
+    value: C:\bld
   pagefile_size:
-    - value: 16
-      os: win
+  - os: win
+    value: 16
