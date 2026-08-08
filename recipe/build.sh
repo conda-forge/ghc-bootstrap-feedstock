@@ -60,15 +60,17 @@ update_settings() {
     perl -i -pe 's/("C compiler command", ")([^"]*)"/\1x86_64-w64-mingw32-gcc.exe"/g' "${settings_file}"
     perl -i -pe 's/("C\+\+ compiler command", ")([^"]*)"/\1x86_64-w64-mingw32-g++.exe"/g' "${settings_file}"
     perl -i -pe 's/(CPP command", ")([^"]*)"/\1x86_64-w64-mingw32-gcc.exe"/g' "${settings_file}"
-    perl -i -pe 's/("C compiler link flags", ")([^"]*)"/\1-fuse-ld=bfd -Wl,--enable-auto-import -Wl,--image-base=0x400000 -Wl,--disable-dynamicbase -Wl,--disable-high-entropy-va"/g' "${settings_file}"
+    perl -i -pe 's#("C compiler link flags", ")([^"]*)"#\1-fuse-ld=bfd -Wl,--enable-auto-import -Wl,--image-base=0x400000 -Wl,--disable-dynamicbase -Wl,--disable-high-entropy-va -L\$topdir/../../Library/lib -L\$topdir/../../Library/x86_64-w64-mingw32/sysroot/usr/lib -lmingw32 -lgcc -lgcc_eh -lmoldname -lmingwex -lucrt -lkernel32"#g' "${settings_file}"
 
-    # GHC invokes ld.bfd.exe directly for larger link units (bypassing the C
-    # compiler driver, which normally injects mingw's default libraries and
-    # startup objects automatically). "ld flags" was previously left unset for
-    # Windows, so those defaults - and the relocation mitigation above - never
-    # reached the direct-ld path, causing undefined references to symbols that
-    # only live in mingw-w64/UCRT's runtime libraries (swprintf,
-    # __local_stdio_printf_options, __mingw_fe_pc53_env).
+    # GHC links most binaries via gcc -> collect2 -> ld.bfd, which consumes
+    # "C compiler link flags" above (not "ld flags"). For some larger link
+    # units GHC's build system may invoke ld.bfd.exe directly, bypassing gcc's
+    # implicit default-library injection entirely - so the same mingw-w64/UCRT
+    # default libraries and relocation mitigation are duplicated below onto
+    # "ld flags" as a second line of defense. Without both, undefined
+    # references appear for symbols that only live in mingw-w64/UCRT's
+    # runtime libraries (swprintf, __local_stdio_printf_options,
+    # __mingw_fe_pc53_env).
     perl -i -pe 's#("ld flags", ")([^"]*)"#\1-L\$topdir/../../Library/lib -L\$topdir/../../Library/x86_64-w64-mingw32/sysroot/usr/lib -lmingw32 -lgcc -lgcc_eh -lmoldname -lmingwex -lucrt -lkernel32 --image-base=0x400000 --disable-dynamicbase --disable-high-entropy-va"#g' "${settings_file}"
 
     # Update GHC settings for Windows toolchain compatibility
