@@ -6,10 +6,10 @@ conda_build:
   error_overlinking: true
 conda_forge_output_validation: true
 test: native_and_emulated
-azure:
-    # toggle for freeing up some extra space on the default Azure Pipelines
-    # linux image before running the Docker container for building
-    free_disk_space: true
-    settings_win:
-        variables:
-            CONDA_BLD_PATH: "C:\\bld"
+workflow_settings:
+  build_workspace_dir:
+    - os: win
+      value: C:\bld
+  pagefile_size:
+    - value: 16
+      os: win
