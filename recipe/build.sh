@@ -60,18 +60,27 @@ update_settings() {
     perl -i -pe 's/("C compiler command", ")([^"]*)"/\1x86_64-w64-mingw32-gcc.exe"/g' "${settings_file}"
     perl -i -pe 's/("C\+\+ compiler command", ")([^"]*)"/\1x86_64-w64-mingw32-g++.exe"/g' "${settings_file}"
     perl -i -pe 's/(CPP command", ")([^"]*)"/\1x86_64-w64-mingw32-gcc.exe"/g' "${settings_file}"
-    perl -i -pe 's#("C compiler link flags", ")([^"]*)"#\1-fuse-ld=bfd -Wl,--enable-auto-import -Wl,--image-base=0x400000 -Wl,--disable-dynamicbase -Wl,--disable-high-entropy-va -L\$topdir/../../Library/lib -L\$topdir/../../Library/x86_64-w64-mingw32/sysroot/usr/lib -lmingw32 -lgcc -lgcc_eh -lmoldname -lmingwex -lucrt -lkernel32"#g' "${settings_file}"
+    perl -i -pe 's#("C compiler link flags", ")([^"]*)"#\1-fuse-ld=bfd -Wl,--enable-auto-import -Wl,--image-base=0x400000 -Wl,--disable-dynamicbase -Wl,--disable-high-entropy-va -L\$topdir/../../Library/lib -L\$topdir/../../Library/x86_64-w64-mingw32/sysroot/usr/lib -Wl,--whole-archive,\$topdir/private/libcrt_compat.a,--no-whole-archive -Wl,-u,__stdio_common_vswprintf -lmingwex -lgcc -lgcc_eh -lmoldname -lucrt -lkernel32"#g' "${settings_file}"
 
-    # GHC links most binaries via gcc -> collect2 -> ld.bfd, which consumes
-    # "C compiler link flags" above (not "ld flags"). For some larger link
-    # units GHC's build system may invoke ld.bfd.exe directly, bypassing gcc's
-    # implicit default-library injection entirely - so the same mingw-w64/UCRT
-    # default libraries and relocation mitigation are duplicated below onto
-    # "ld flags" as a second line of defense. Without both, undefined
-    # references appear for symbols that only live in mingw-w64/UCRT's
-    # runtime libraries (swprintf, __local_stdio_printf_options,
-    # __mingw_fe_pc53_env).
-    perl -i -pe 's#("ld flags", ")([^"]*)"#\1-L\$topdir/../../Library/lib -L\$topdir/../../Library/x86_64-w64-mingw32/sysroot/usr/lib -lmingw32 -lgcc -lgcc_eh -lmoldname -lmingwex -lucrt -lkernel32 --image-base=0x400000 --disable-dynamicbase --disable-high-entropy-va"#g' "${settings_file}"
+    # GHC links most binaries via gcc -> collect2 -> ld.bfd (confirmed via
+    # CI log "collect2.exe" trace), so "C compiler link flags" is the field
+    # actually consulted here; "ld flags" is kept as a fallback for any
+    # larger link units that might bypass gcc directly. libcrt_compat.a is
+    # small and safe to force-include wholesale via
+    # --whole-archive/--no-whole-archive - it now also carries a weak
+    # fallback definition of __mingw_fe_pc53_env (see recipe/crt_compat.c),
+    # so no "-u __mingw_fe_pc53_env" forcing is needed for that symbol
+    # anymore. "-u __stdio_common_vswprintf" forces that UCRT symbol
+    # (needed by crt_compat.c's swprintf) into the pending-undefined set
+    # from link start, so plain lazy "-lmingwex"/"-lucrt" scanning pulls in
+    # only the exact member objects that provide it - avoiding
+    # --whole-archive's blast radius (whole-archiving all of libmingwex.a
+    # was tried and reverted: it drags in unrelated members like
+    # vfwscanf.o/vswscanf.o whose own transitive references are not
+    # otherwise satisfied). Do NOT add "-lmingw32" here - it duplicates
+    # gcc's own automatic inclusion of libmingw32.a's CRT startup object,
+    # causing "multiple definition of main" (this was tried and reverted).
+    perl -i -pe 's#("ld flags", ")([^"]*)"#\1-L\$topdir/../../Library/lib -L\$topdir/../../Library/x86_64-w64-mingw32/sysroot/usr/lib --whole-archive \$topdir/private/libcrt_compat.a --no-whole-archive -u __stdio_common_vswprintf -lmingwex -lgcc -lgcc_eh -lmoldname -lucrt -lkernel32 --image-base=0x400000 --disable-dynamicbase --disable-high-entropy-va"#g' "${settings_file}"
 
     # Update GHC settings for Windows toolchain compatibility
     perl -i -pe 's/("ar command", ")([^"]*)"/\1x86_64-w64-mingw32-ar.exe"/g' "${settings_file}"
@@ -264,6 +273,13 @@ else
   pushd bootstrap-ghc 2>/dev/null || exit 1
     tar cf - ./* | (cd "${PREFIX}/ghc-bootstrap" || exit; tar xf -)
   popd 2>/dev/null || exit 1
+
+  # Build CRT compatibility shim (see recipe/crt_compat.c for rationale)
+  mkdir -p "${PREFIX}"/ghc-bootstrap/lib/private
+  x86_64-w64-mingw32-gcc.exe -c -O2 \
+    "${RECIPE_DIR}"/crt_compat.c -o "${SRC_DIR}"/crt_compat.o
+  x86_64-w64-mingw32-ar.exe rcs "${PREFIX}"/ghc-bootstrap/lib/private/libcrt_compat.a \
+    "${SRC_DIR}"/crt_compat.o
 
   # Update the installed settings file (find custom libraries, set sysroot, ...)
   update_settings

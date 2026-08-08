@@ -32,6 +32,7 @@ build:
   prefix_detection:
     ignore:
       - ghc-bootstrap/**/*.so
+  script: build.sh
   # We will not need x-compiled ghc-bootstrap
   skip: aarch64 or ppc64le
 
