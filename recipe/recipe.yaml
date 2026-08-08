@@ -6,10 +6,14 @@ package:
   version: ${{ version }}
 
 source:
-  - if: osx
+  - if: osx and x86_64
     then:
       url: https://downloads.haskell.org/~ghc/${{ version }}/ghc-${{ version }}-x86_64-apple-darwin.tar.xz
       sha256: 404b2ceacb2b2092a2f1d9e8f551a72d0bf34d897c0c7baf3e79ffec837a0b72
+  - if: osx and arm64
+    then:
+      url: https://downloads.haskell.org/~ghc/${{ version }}/ghc-${{ version }}-aarch64-apple-darwin.tar.xz
+      sha256: 841591f152085be605616682779341847d24fd56bd6d22ca61bb37ee32b50681
   - if: linux
     then:
       url: https://downloads.haskell.org/~ghc/${{ version }}/ghc-${{ version }}-x86_64-deb9-linux.tar.xz
@@ -29,7 +33,7 @@ build:
     ignore:
       - ghc-bootstrap/**/*.so
   # We will not need x-compiled ghc-bootstrap
-  skip: aarch64 or ppc64le or arm64
+  skip: aarch64 or ppc64le
 
 requirements:
   build:

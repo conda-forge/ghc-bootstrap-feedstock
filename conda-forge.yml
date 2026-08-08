@@ -1,15 +1,19 @@
+conda_build:
+  error_overlinking: true
 conda_build_tool: rattler-build
+conda_forge_output_validation: false
+conda_install_tool: pixi
 github:
   branch_name: main
   tooling_branch_name: main
-conda_build:
-  error_overlinking: true
-conda_forge_output_validation: true
-test: native_and_emulated
-azure:
-    # toggle for freeing up some extra space on the default Azure Pipelines
-    # linux image before running the Docker container for building
-    free_disk_space: true
-    settings_win:
-        variables:
-            CONDA_BLD_PATH: "C:\\bld"
+provider:
+  osx_arm64: default
+test: all
+workflow_settings:
+  build_workspace_dir:
+    - os: win
+      value: C:\bld
+  free_disk_space: quick
+  pagefile_size:
+    - value: 16
+      os: win
