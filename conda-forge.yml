@@ -13,7 +13,6 @@ workflow_settings:
   build_workspace_dir:
   - os: win
     value: C:\bld
-  free_disk_space: quick
   pagefile_size:
   - os: win
     value: 16

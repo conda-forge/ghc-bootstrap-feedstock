@@ -19,7 +19,7 @@ docker_image:
 gmp:
 - '6'
 libffi:
-- '3.5'
+- '3.7'
 libiconv:
 - '1'
 target_platform:
