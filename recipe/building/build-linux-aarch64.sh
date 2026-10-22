@@ -41,6 +41,22 @@ perl -i -pe "s#(ld flags\", \")([^\"]*)\"#\1\2 -L${settings_topdir}/aarch64-cond
 # Remove no-pie
 perl -i -pe "s#(compiler supports -no-pie\", \")[^\"]*\"#\1YES\"#g" "${settings_file}"
 
+# Add conda lib RUNPATH for libtinfo consumers
+echo "Adding conda lib RUNPATH for libtinfo consumers"
+find "${GHC_INSTALLDIR}" -type f | while read -r f; do
+  if file "$f" | grep -q ELF; then
+    needed=$(patchelf --print-needed "$f" 2>/dev/null || true)
+    if grep -q "libtinfo.so" <<< "$needed"; then
+      rel=$(realpath --relative-to="$(dirname "$f")" "${PREFIX}/lib")
+      current_rpath=$(patchelf --print-rpath "$f")
+      new_rpath="\$ORIGIN/${rel}${current_rpath:+:$current_rpath}"
+      patchelf --set-rpath "$new_rpath" "$f"
+      echo -n "."
+    fi
+  fi
+done
+echo " done"
+
 # Verify sysroot compatibility
 echo "Verify sysroot compatibility"
 printf 'import System.Posix.Signals\nmain = installHandler sigTERM Default Nothing >> putStrLn "Signal test"\n' > signal_test.hs
