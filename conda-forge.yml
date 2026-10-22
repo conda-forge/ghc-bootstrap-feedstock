@@ -6,6 +6,9 @@ conda_build:
   error_overlinking: true
 conda_forge_output_validation: true
 test: native_and_emulated
+provider:
+  linux_aarch64: default
+  osx_arm64: default
 azure:
     # toggle for freeing up some extra space on the default Azure Pipelines
     # linux image before running the Docker container for building
