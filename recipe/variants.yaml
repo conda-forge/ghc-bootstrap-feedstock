@@ -1,0 +1,11 @@
+# Linux uses clang (not the conda-forge gcc default); version pinned at 18 for
+# both linux and osx. Everything else comes from conda-forge-pinning; win uses
+# the m2w64_* pinning keys.
+c_compiler:
+  - clang
+c_compiler_version:
+  - 18
+cxx_compiler:
+  - clangxx
+cxx_compiler_version:
+  - 18

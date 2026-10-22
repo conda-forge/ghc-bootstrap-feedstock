@@ -29,7 +29,7 @@ source:
       target_directory: bootstrap-ghc
 
 build:
-  number: 1
+  number: 2
   dynamic_linking:
     binary_relocation:
       - ghc-bootstrap/lib/${{ version }}/bin/*
@@ -41,9 +41,15 @@ build:
 
 requirements:
   build:
-    - ${{ compiler('c') }}
-    - ${{ compiler('cxx') }}
-    - ${{ stdlib('c') }}
+    - if: win
+      then:
+        - ${{ compiler('m2w64_c') }}
+        - ${{ compiler('m2w64_cxx') }}
+        - ${{ stdlib('m2w64_c') }}
+      else:
+        - ${{ compiler('c') }}
+        - ${{ compiler('cxx') }}
+        - ${{ stdlib('c') }}
     - gmp
     - libffi
     - perl 5.32.*
@@ -57,6 +63,7 @@ requirements:
     - if: linux and aarch64
       then:
         - ncurses
+        - binutils
 
     - if: unix
       then:
@@ -116,7 +123,11 @@ tests:
             - ghc-bootstrap/lib/ghc-${{ version }}/private/libncurses.so.5
             - ghc-bootstrap/lib/ghc-${{ version }}/private/libtinfo.so.5
             - ghc-bootstrap/lib/ghc-${{ version }}/private/libtinfow.so.5
-        
+
+        - if: linux and aarch64
+          then:
+            - ghc-bootstrap/lib/ghc-${{ version }}/private/libghc_glibc_compat.so
+
         - if: osx
           then:
             - ghc-bootstrap/lib/ghc-${{ version }}/lib/settings
@@ -153,8 +164,13 @@ tests:
           - CALL %PREFIX%/ghc-bootstrap/bin/ghc.exe -v --version
     requirements:
       run:
-        - ${{ compiler('c') }}
-        - ${{ stdlib('c') }}
+        - if: win
+          then:
+            - ${{ compiler('m2w64_c') }}
+            - ${{ stdlib('m2w64_c') }}
+          else:
+            - ${{ compiler('c') }}
+            - ${{ stdlib('c') }}
         # - if: not unix
         #   then: binutils
 
@@ -174,8 +190,13 @@ tests:
         - testing/
     requirements:
       run:
-        - ${{ compiler('c') }}
-        - ${{ stdlib('c') }}
+        - if: win
+          then:
+            - ${{ compiler('m2w64_c') }}
+            - ${{ stdlib('m2w64_c') }}
+          else:
+            - ${{ compiler('c') }}
+            - ${{ stdlib('c') }}
         # - if: not unix
         #   then: binutils
 
