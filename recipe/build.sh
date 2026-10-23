@@ -127,7 +127,7 @@ if [[ ! -d bootstrap-ghc ]]; then
     perl -i -pe "s#(compiler supports -no-pie\", \")[^\"]*\"#\1YES\"#g" "${settings_file}"
   fi
 
-  if [[ "${target_platform}" == "linux-x86_64" ]]; then
+  if [[ "${target_platform}" == "linux-64" ]]; then
     # Add sysroot (this helps when cross-compiling on conda forge)
     perl -i -pe 's#("C compiler link flags", "--target[^\s]*)#\1 --sysroot=\$topdir/../../../../x86_64-conda-linux-gnu/sysroot#g' "${settings_file}"
   fi
@@ -147,7 +147,7 @@ if [[ ! -d bootstrap-ghc ]]; then
   fi
 
   # We enforce prioritizing the sysroot for self-consistently finding the libraries
-  if [[ "${target_platform}" == "linux-x86_64" ]]; then
+  if [[ "${target_platform}" == "linux-64" ]]; then
     echo "Bundling ncurses 5 libraries privately"
     # cp -L: dereference symlinks so real files land in the private dir
     for n in ncurses tinfo tinfow; do
