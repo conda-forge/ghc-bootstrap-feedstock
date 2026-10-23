@@ -54,7 +54,6 @@ requirements:
     - if: linux and x86_64
       then:
         - ncurses <6,>=5
-        - libgcc
     - if: linux and aarch64
       then:
         - ncurses
@@ -140,14 +139,11 @@ tests:
             - ghc-bootstrap/lib/ghc-${{ version }}/lib/private/libncurses.so.5
             - ghc-bootstrap/lib/ghc-${{ version }}/lib/private/libtinfo.so.5
             - ghc-bootstrap/lib/ghc-${{ version }}/lib/private/libtinfow.so.5
+            - ghc-bootstrap/lib/ghc-${{ version }}/lib/private/ld-2.17.so
 
         - if: linux and aarch64
           then:
             - ghc-bootstrap/lib/ghc-${{ version }}/lib/private/libghc_glibc_compat.so
-
-        - if: osx
-          then:
-            - ghc-bootstrap/lib/ghc-${{ version }}/lib/private/libiconv_compat.dylib
 
   - script:
       - if: unix

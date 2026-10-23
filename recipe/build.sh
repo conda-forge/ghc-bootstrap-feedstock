@@ -21,6 +21,92 @@ settings_topdir='\$topdir/../../../..'
 settings_private='\$topdir/private'
 test_ghc_flags=""
 
+fine_tune_linux_rpaths() {
+  # Fine-tune RPATHs (mirrors the 9.8.4 recipe, adapted to the lib/ghc-<ver>/lib layout)
+  local dir rpath_str binary base_dir needed_libs lib select_path
+  local need_sysroot_lib64 need_sysroot_usr_lib64 need_conda_lib need_prefix_lib need_haskell_lib need_private
+  local rpath current_rpath
+  local private_rel="ghc-bootstrap/lib/ghc-${PKG_VERSION}/lib/private"
+  local haskell_rel="ghc-bootstrap/lib/ghc-${PKG_VERSION}/lib/x86_64-linux-ghc-${PKG_VERSION}"
+
+  for dir in "${ghc_root}/bin" "${ghc_libdir}/bin"; do
+    if [[ "${dir}" == "${ghc_root}/bin" ]]; then
+      rpath_str="../.."
+    else
+      rpath_str="../../../.."
+    fi
+
+    find "${dir}" -maxdepth 1 -type f \( -executable -o -name "*.so" \) | while read -r binary; do
+      if (file "${binary}" | grep -q "ELF") >& /dev/null; then
+        echo -n "["
+        echo -n "$(basename "${binary}")"
+
+        base_dir="$(dirname "${binary}")"
+        needed_libs=$(readelf -d "${binary}" | grep "NEEDED" | grep -o '\[.*\]' | tr -d '[]')
+
+        need_sysroot_lib64=0
+        need_sysroot_usr_lib64=0
+        need_conda_lib=0
+        need_prefix_lib=0
+        need_haskell_lib=0
+        need_private=0
+        while IFS= read -r lib; do
+          [[ -z "${lib}" ]] && continue
+
+          if select_path="x86_64-conda-linux-gnu/sysroot/lib64" \
+            && [[ -f "${PREFIX}/${select_path}/${lib}" ]]; then
+              (cd "${base_dir}" && ls "${rpath_str}/${select_path}/${lib}" | grep -q "${lib}") && need_sysroot_lib64=1
+          elif select_path="x86_64-conda-linux-gnu/sysroot/usr/lib64" \
+            && [[ -f "${PREFIX}/${select_path}/${lib}" ]]; then
+              (cd "${base_dir}" && ls "${rpath_str}/${select_path}/${lib}" | grep -q "${lib}") && need_sysroot_usr_lib64=1
+          elif select_path="x86_64-conda-linux-gnu/lib" \
+            && [[ -f "${PREFIX}/${select_path}/${lib}" ]]; then
+              (cd "${base_dir}" && ls "${rpath_str}/${select_path}/${lib}" | grep -q "${lib}") && need_conda_lib=1
+          elif select_path="${private_rel}" \
+            && [[ -f "${PREFIX}/${select_path}/${lib}" ]]; then
+              (cd "${base_dir}" && ls "${rpath_str}/${select_path}/${lib}" | grep -q "${lib}") && need_private=1
+          elif select_path="${haskell_rel}" \
+            && [[ -f "${PREFIX}/${select_path}/${lib}" ]]; then
+              (cd "${base_dir}" && ls "${rpath_str}/${select_path}/${lib}" | grep -q "${lib}") && need_haskell_lib=1
+          elif select_path="lib" \
+            && [[ -f "${PREFIX}/${select_path}/${lib}" ]]; then
+              (cd "${base_dir}" && ls "${rpath_str}/${select_path}/${lib}" | grep -q "${lib}") && need_prefix_lib=1
+          fi
+
+          if [[ ${need_private} == 0 ]] && [[ ${need_haskell_lib} == 0 ]] && [[ ${need_prefix_lib} == 0 ]] && [[ ${need_conda_lib} == 0 ]] && [[ ${need_sysroot_usr_lib64} == 0 ]] && [[ ${need_sysroot_lib64} == 0 ]]; then
+            echo -n "DBG: NEEDED lib ${lib} - NOT FOUND"
+            exit 1
+          fi
+        done <<< "$needed_libs"
+
+        if (ldd "${binary}" | grep -q "libgcc_s.so.1" 2>/dev/null) && ! (readelf -d "${binary}" | grep -q "libgcc_s.so.1" 2>/dev/null); then
+          need_conda_lib=1
+        fi
+
+        rpath=""
+        [[ $need_sysroot_lib64 == 1 ]]     && rpath="${rpath:+$rpath:}\$ORIGIN/$rpath_str/x86_64-conda-linux-gnu/sysroot/lib64"
+        [[ $need_sysroot_usr_lib64 == 1 ]] && rpath="${rpath:+$rpath:}\$ORIGIN/$rpath_str/x86_64-conda-linux-gnu/sysroot/usr/lib64"
+        [[ $need_conda_lib == 1 ]]         && rpath="${rpath:+$rpath:}\$ORIGIN/$rpath_str/x86_64-conda-linux-gnu/lib"
+        [[ $need_private == 1 ]]           && rpath="${rpath:+$rpath:}\$ORIGIN/$rpath_str/${private_rel}"
+        [[ $need_haskell_lib == 1 ]]       && rpath="${rpath:+$rpath:}\$ORIGIN/$rpath_str/${haskell_rel}"
+        [[ $need_prefix_lib == 1 ]]        && rpath="${rpath:+$rpath:}\$ORIGIN/$rpath_str/lib"
+
+        current_rpath=$(patchelf --print-rpath "${binary}" 2>/dev/null || echo "")
+
+        # Removing the RPATH damages ghc-pkg and hc-iserv-dyn-ghc
+        patchelf --force-rpath --set-rpath "${rpath}${current_rpath:+:$current_rpath}" "${binary}"
+
+        if [[ "${binary}" != *".so"* ]]; then
+          # Anchor interpreter to the versioned loader
+          echo -n ":"
+          patchelf --set-interpreter "${ghc_private}/ld-2.17.so" "${binary}" && echo -n "*"
+        fi
+        echo -n "]"
+      fi
+    done
+  done
+}
+
 # Install bootstrap GHC - Set conda platform moniker (we only download non-unix in separate directory)
 if [[ ! -d bootstrap-ghc ]]; then
   if [[ "${target_platform}" == "linux-"* ]]; then
@@ -60,6 +146,7 @@ if [[ ! -d bootstrap-ghc ]]; then
   fi
   echo "Running make install ..."
   make install >& "${SRC_DIR}"/_logs/make_install.log
+  unset LD_PRELOAD
 
   if [[ "${target_platform}" == "linux-aarch64" ]]; then
     # Make the deb10 bindist usable against the glibc 2.17 sysroot
@@ -128,8 +215,27 @@ if [[ ! -d bootstrap-ghc ]]; then
   fi
 
   if [[ "${target_platform}" == "linux-64" ]]; then
-    # Add sysroot (this helps when cross-compiling on conda forge)
-    perl -i -pe 's#("C compiler link flags", "--target[^\s]*)#\1 --sysroot=\$topdir/../../../../x86_64-conda-linux-gnu/sysroot#g' "${settings_file}"
+    # Fixing the sysroot (mirrors the 9.8.4 recipe)
+    sysroot_rel="${settings_topdir}/x86_64-conda-linux-gnu/sysroot"
+    compiling="--sysroot=${sysroot_rel} -isystem=${sysroot_rel}/usr/include -D_GNU_SOURCE"
+
+    clang_linking="--sysroot=${sysroot_rel}"
+    clang_linking="${clang_linking} -Wl,-L${sysroot_rel}/lib64"
+    clang_linking="${clang_linking} -Wl,-L${sysroot_rel}/usr/lib64"
+    clang_linking="${clang_linking} -Wl,-L${settings_topdir}/x86_64-conda-linux-gnu/lib"
+    clang_linking="${clang_linking} -Wl,-L${settings_topdir}/lib"
+
+    ld_linking="--sysroot=${sysroot_rel}"
+    ld_linking="${ld_linking} -L${sysroot_rel}/lib64"
+    ld_linking="${ld_linking} -L${sysroot_rel}/usr/lib64"
+    ld_linking="${ld_linking} -L${settings_topdir}/x86_64-conda-linux-gnu/lib"
+    ld_linking="${ld_linking} -L${settings_topdir}/lib"
+
+    perl -i -pe "s#(C compiler flags\", \")#\1 ${compiling} #" "${settings_file}"
+    perl -i -pe "s#(C\+\+ compiler flags\", \")#\1 ${compiling} #" "${settings_file}"
+    perl -i -pe "s#(Haskell CPP flags\", \")#\1 ${compiling} #" "${settings_file}"
+    perl -i -pe "s#(link flags\", \")#\1 ${clang_linking} #" "${settings_file}"
+    perl -i -pe "s#(ld flags\", \")#\1 ${ld_linking} #" "${settings_file}"
   fi
 
   if [[ "${target_platform}" == "linux-aarch64" ]]; then
@@ -142,15 +248,13 @@ if [[ ! -d bootstrap-ghc ]]; then
 
   if [[ "${target_platform}" == "osx-"* ]]; then
     perl -i -pe 's#("C compiler flags", ")([^"]*)"#\1\2 -mmacosx-version-min=11.0"#g' "${settings_file}"
-    # conda libiconv exports _libiconv* names; build a shim providing _iconv*
-    mkdir -p "${ghc_private}"
-    ${CC} -dynamiclib -o "${ghc_private}"/libiconv_compat.dylib "${RECIPE_DIR}"/osx_iconv_compat.c \
-      -L"${PREFIX}/lib" -liconv \
-      -Wl,-rpath,"${PREFIX}/lib" \
-      -mmacosx-version-min=11.0 \
-      -install_name "@rpath/libiconv_compat.dylib"
-    perl -i -pe "s#(C compiler link flags\", \")([^\"]*)\"#\1\2 -mmacosx-version-min=11.0 -L${settings_topdir}/lib -L${settings_private} -Wl,-rpath,${settings_private} -liconv_compat\"#g" "${settings_file}"
-    test_ghc_flags="-L${PREFIX}/lib"
+    # conda libiconv exports _libiconv* names: alias them to _iconv* (mirrors main)
+    iconv_aliases="-Wl,-alias,_libiconv,_iconv -Wl,-alias,_libiconv_open,_iconv_open -Wl,-alias,_libiconv_close,_iconv_close"
+    perl -i -pe "s#(C compiler link flags\", \")([^\"]*)#\1\2 -mmacosx-version-min=11.0 -L${settings_topdir}/lib -Wl,-rpath,${settings_topdir}/lib ${iconv_aliases} -liconv#" "${settings_file}"
+    perl -i -pe "s#(ld flags\", \")([^\"]*)#\1\2 -L${settings_topdir}/lib ${iconv_aliases} -liconv#" "${settings_file}"
+    # Use the Apple ar/ranlib
+    perl -i -pe 's#(ar command", ").*"#\1/usr/bin/ar"#' "${settings_file}"
+    perl -i -pe 's#(ranlib command", ").*"#\1/usr/bin/ranlib"#' "${settings_file}"
   fi
 
   # We enforce prioritizing the sysroot for self-consistently finding the libraries
@@ -167,41 +271,18 @@ if [[ ! -d bootstrap-ghc ]]; then
       cp -L "${src}" "${ghc_private}/lib${n}.so.5"
     done
 
-    echo "Patching binaries"
-    find "${ghc_libdir}"/bin -maxdepth 1 -type f -executable | while read -r binary; do
-      if file "$binary" | grep -q "ELF"; then
-        current_rpath=$(patchelf --print-rpath "$binary" 2>/dev/null || echo "")
-        private_lib="\$ORIGIN/../lib/private"
-        sysroot_lib64="\$ORIGIN/../../../../${conda_triplet}/sysroot/lib64"
-        sysroot_usr_lib64="\$ORIGIN/../../../../${conda_triplet}/sysroot/usr/lib64"
-        conda_lib="\$ORIGIN/../../../../lib"
-        if [[ -n "$current_rpath" ]]; then
-          new_rpath="${private_lib}:${sysroot_lib64}:${sysroot_usr_lib64}:${conda_lib}:${current_rpath}"
-        else
-          new_rpath="${private_lib}:${sysroot_lib64}:${sysroot_usr_lib64}:${conda_lib}"
-        fi
-        patchelf --set-rpath "$new_rpath" "$binary" 2>/dev/null && echo -n "."
-      fi
-    done
+    # Loader 2.17 matching the sysroot libc (ghc-pkg breaks with any other loader)
+    cp -L "${BUILD_PREFIX}/${conda_triplet}"/sysroot/lib64/ld-2.17.so "${ghc_private}/ld-2.17.so"
+
+    # Mock PREFIX-installed sysroot for fine-tuning of RPATHs
+    mkdir -p "${PREFIX}/${conda_triplet}"/{sysroot,lib}
+    cp -r "${BUILD_PREFIX}/${conda_triplet}"/sysroot "${PREFIX}/${conda_triplet}"
+    cp -r "${BUILD_PREFIX}/${conda_triplet}"/lib/libgcc_s* "${PREFIX}/${conda_triplet}"/lib
+
+    fine_tune_linux_rpaths
     echo " done"
 
-    echo "Patching libraries"
-    find "${ghc_libdir}"/lib/"${ghc_arch}"-linux-ghc-"${PKG_VERSION}"* -maxdepth 1 -type f -executable | while read -r binary; do
-      if file "$binary" | grep -q "ELF"; then
-        current_rpath=$(patchelf --print-rpath "$binary" 2>/dev/null || echo "")
-        private_lib="\$ORIGIN/../private"
-        sysroot_lib64="\$ORIGIN/../../../../../${conda_triplet}/sysroot/lib64"
-        sysroot_usr_lib64="\$ORIGIN/../../../../../${conda_triplet}/sysroot/usr/lib64"
-        conda_lib="\$ORIGIN/../../../../../lib"
-        if [[ -n "$current_rpath" ]]; then
-          new_rpath="${private_lib}:${sysroot_lib64}:${sysroot_usr_lib64}:${conda_lib}:${current_rpath}"
-        else
-          new_rpath="${private_lib}:${sysroot_lib64}:${sysroot_usr_lib64}:${conda_lib}"
-        fi
-        patchelf --set-rpath "$new_rpath" "$binary" 2>/dev/null && echo -n "."
-      fi
-    done
-    echo " done"
+    "${ghc_root}"/bin/ghc-pkg recache
   fi
 
   if [[ "${target_platform}" == "linux-aarch64" ]]; then
@@ -225,22 +306,14 @@ if [[ ! -d bootstrap-ghc ]]; then
     export LD_LIBRARY_PATH="${BUILD_PREFIX}/lib:${LD_LIBRARY_PATH:-}"
     test_ghc_flags="-L${BUILD_PREFIX}/lib"
   fi
-  if [[ "${target_platform}" == "osx-arm64" ]]; then
-    test_ghc_flags="-L${BUILD_PREFIX}/lib -L${PREFIX}/lib"
-  fi
 
   # Verify sysroot compatibility
   printf 'import System.Posix.Signals\nmain = installHandler sigTERM Default Nothing >> putStrLn "Signal test"\n' > signal_test.hs
-  if [[ "${target_platform}" == "linux-"* ]]; then
+  if [[ "${target_platform}" == "linux-aarch64" ]]; then
     # We need to map the PREFIX environment sysroot
     mkdir -p "${PREFIX}/${conda_triplet}" && ln -s "${BUILD_PREFIX}/${conda_triplet}"/sysroot "${PREFIX}/${conda_triplet}"/sysroot
   fi
   ghc_test_log="${SRC_DIR}"/_logs/ghc_signal_test.log
-  saved_ld_library_path="${LD_LIBRARY_PATH:-}"
-  if [[ "${target_platform}" == "linux-64" ]]; then
-    # Smoke test only: prefer conda runtime libs (libgcc_s) over the host ones
-    export LD_LIBRARY_PATH="${BUILD_PREFIX}/lib:${PREFIX}/lib:${LD_LIBRARY_PATH:-}"
-  fi
   "${ghc_root}"/bin/ghc -v ${test_ghc_flags} signal_test.hs >> "${ghc_test_log}" 2>&1 || {
     cat "${ghc_test_log}"
     exit 1
@@ -251,7 +324,6 @@ if [[ ! -d bootstrap-ghc ]]; then
     echo "Signal test failed with exit code $?"
     exit 1
   fi
-  export LD_LIBRARY_PATH="${saved_ld_library_path}"
   if [[ "${target_platform}" == "linux-"* ]]; then
     rm -rf "${PREFIX:?}/${conda_triplet}"
   fi
