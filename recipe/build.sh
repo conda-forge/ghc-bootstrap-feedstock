@@ -49,6 +49,7 @@ update_settings() {
       # Private dir (libghc_glibc_compat.so): comma form only, never in "ld flags"
       clang_linking="${clang_linking} -Wl,-L\\\$topdir/../../private -Wl,-rpath,\\\$topdir/../../private"
       clang_linking="${clang_linking} -Wl,-rpath-link,\\\$topdir/../../private"
+      clang_linking="${clang_linking} -L\\\$topdir/../../private -lghc_glibc_compat"
     fi
 
     perl -i -pe "s#(C compiler flags\", \")#\1 ${compiling} #" "${settings_file}"
@@ -201,10 +202,10 @@ patch_glibc_compat() {
     if file "$f" | grep -q ELF; then
       dynsyms=$(readelf --dyn-syms -W "$f" 2>/dev/null || true)
       needs_compat=0
-      for sym in fcntl64 logf powf expf; do
-        if grep -q "${sym}@GLIBC_2\.2[78]" <<< "$dynsyms"; then
+      for sym in fcntl64 statx memfd_create logf powf expf; do
+        if grep -Eq "${sym}@GLIBC_2\.(2[0-9]|1[89])" <<< "$dynsyms"; then
           patchelf --clear-symbol-version "${sym}" "$f"
-          if [[ "${sym}" == "fcntl64" ]]; then
+          if [[ "${sym}" == "fcntl64" || "${sym}" == "statx" || "${sym}" == "memfd_create" ]]; then
             needs_compat=1
           fi
         fi
@@ -224,6 +225,7 @@ patch_glibc_compat() {
     if file "$f" | grep -q ELF; then
       if readelf --dyn-syms -W "$f" 2>/dev/null | grep -Eq 'GLIBC_2\.(1[89]|2[0-9]|3[0-9])'; then
         echo "ERROR: $f still references glibc newer than 2.17"
+        readelf --dyn-syms -W "$f" 2>/dev/null | grep -E 'GLIBC_2\.(1[89]|2[0-9]|3[0-9])' || true
         failed=1
       fi
     fi

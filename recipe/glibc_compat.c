@@ -5,6 +5,7 @@
  */
 #include <fcntl.h>
 #include <stdarg.h>
+#include <unistd.h>
 
 int fcntl64(int fd, int cmd, ...)
 {
@@ -15,4 +16,15 @@ int fcntl64(int fd, int cmd, ...)
   arg = va_arg(ap, void *);
   va_end(ap);
   return fcntl(fd, cmd, arg);
+}
+
+/* aarch64 syscall numbers */
+int statx(int dirfd, const char *path, int flags, unsigned int mask, void *buf)
+{
+  return (int)syscall(291, dirfd, path, flags, mask, buf);
+}
+
+int memfd_create(const char *name, unsigned int flags)
+{
+  return (int)syscall(279, name, flags);
 }
