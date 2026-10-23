@@ -277,7 +277,14 @@ if [[ ! -d bootstrap-ghc ]]; then
     # Mock PREFIX-installed sysroot for fine-tuning of RPATHs
     mkdir -p "${PREFIX}/${conda_triplet}"/{sysroot,lib}
     cp -r "${BUILD_PREFIX}/${conda_triplet}"/sysroot "${PREFIX}/${conda_triplet}"
-    cp -r "${BUILD_PREFIX}/${conda_triplet}"/lib/libgcc_s* "${PREFIX}/${conda_triplet}"/lib
+    # clang toolchain: libgcc_s comes from conda's libgcc in BUILD_PREFIX/lib, not the gcc triplet dir
+    if ls "${BUILD_PREFIX}"/lib/libgcc_s.so* >/dev/null 2>&1; then
+      cp -L "${BUILD_PREFIX}"/lib/libgcc_s.so* "${PREFIX}"/x86_64-conda-linux-gnu/lib/
+    elif ls "${BUILD_PREFIX}"/x86_64-conda-linux-gnu/lib/libgcc_s* >/dev/null 2>&1; then
+      cp -L "${BUILD_PREFIX}"/x86_64-conda-linux-gnu/lib/libgcc_s* "${PREFIX}"/x86_64-conda-linux-gnu/lib/
+    else
+      echo "WARNING: libgcc_s not found in BUILD_PREFIX; skipping mock copy"
+    fi
 
     fine_tune_linux_rpaths
     echo " done"
