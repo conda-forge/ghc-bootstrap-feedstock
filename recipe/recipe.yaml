@@ -30,6 +30,12 @@ source:
 
 build:
   number: 0
+  dynamic_linking:
+    binary_relocation:
+      - ghc-bootstrap/lib/${{ version }}/bin/*
+  prefix_detection:
+    ignore:
+      - ghc-bootstrap/**/*.so
   # No upstream bindist exists for ppc64le and win-arm64
   skip: ppc64le or (win and arm64)
 
