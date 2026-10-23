@@ -23,18 +23,17 @@ test_ghc_flags=""
 
 fine_tune_linux_rpaths() {
   # Fine-tune RPATHs (mirrors the 9.8.4 recipe, adapted to the lib/ghc-<ver>/lib layout)
-  local dir rpath_str binary base_dir needed_libs lib select_path
+  local dir binary base_dir needed_libs lib select_path
   local need_sysroot_lib64 need_sysroot_usr_lib64 need_conda_lib need_prefix_lib need_haskell_lib need_private
   local rpath current_rpath
-  local private_rel="ghc-bootstrap/lib/ghc-${PKG_VERSION}/lib/private"
-  local haskell_rel="ghc-bootstrap/lib/ghc-${PKG_VERSION}/lib/x86_64-linux-ghc-${PKG_VERSION}"
+  local sysroot_lib64="${PREFIX}/${conda_triplet}/sysroot/lib64"
+  local sysroot_usr_lib64="${PREFIX}/${conda_triplet}/sysroot/usr/lib64"
+  local conda_lib="${PREFIX}/${conda_triplet}/lib"
+  local haskell_dir="${ghc_libdir}/lib/${ghc_arch}-linux-ghc-${PKG_VERSION}"
 
-  for dir in "${ghc_root}/bin" "${ghc_libdir}/bin"; do
-    if [[ "${dir}" == "${ghc_root}/bin" ]]; then
-      rpath_str="../.."
-    else
-      rpath_str="../../../.."
-    fi
+  # Every $ORIGIN-relative entry is computed per file (the 9.12 layout is not the 9.8 one)
+  for dir in "${ghc_root}/bin" "${ghc_libdir}/bin" "${ghc_libdir}/lib/bin"; do
+    [[ -d "${dir}" ]] || continue
 
     find "${dir}" -maxdepth 1 -type f \( -executable -o -name "*.so" \) | while read -r binary; do
       if (file "${binary}" | grep -q "ELF") >& /dev/null; then
@@ -53,24 +52,18 @@ fine_tune_linux_rpaths() {
         while IFS= read -r lib; do
           [[ -z "${lib}" ]] && continue
 
-          if select_path="x86_64-conda-linux-gnu/sysroot/lib64" \
-            && [[ -f "${PREFIX}/${select_path}/${lib}" ]]; then
-              (cd "${base_dir}" && ls "${rpath_str}/${select_path}/${lib}" | grep -q "${lib}") && need_sysroot_lib64=1
-          elif select_path="x86_64-conda-linux-gnu/sysroot/usr/lib64" \
-            && [[ -f "${PREFIX}/${select_path}/${lib}" ]]; then
-              (cd "${base_dir}" && ls "${rpath_str}/${select_path}/${lib}" | grep -q "${lib}") && need_sysroot_usr_lib64=1
-          elif select_path="x86_64-conda-linux-gnu/lib" \
-            && [[ -f "${PREFIX}/${select_path}/${lib}" ]]; then
-              (cd "${base_dir}" && ls "${rpath_str}/${select_path}/${lib}" | grep -q "${lib}") && need_conda_lib=1
-          elif select_path="${private_rel}" \
-            && [[ -f "${PREFIX}/${select_path}/${lib}" ]]; then
-              (cd "${base_dir}" && ls "${rpath_str}/${select_path}/${lib}" | grep -q "${lib}") && need_private=1
-          elif select_path="${haskell_rel}" \
-            && [[ -f "${PREFIX}/${select_path}/${lib}" ]]; then
-              (cd "${base_dir}" && ls "${rpath_str}/${select_path}/${lib}" | grep -q "${lib}") && need_haskell_lib=1
-          elif select_path="lib" \
-            && [[ -f "${PREFIX}/${select_path}/${lib}" ]]; then
-              (cd "${base_dir}" && ls "${rpath_str}/${select_path}/${lib}" | grep -q "${lib}") && need_prefix_lib=1
+          if [[ -f "${sysroot_lib64}/${lib}" ]]; then
+            need_sysroot_lib64=1
+          elif [[ -f "${sysroot_usr_lib64}/${lib}" ]]; then
+            need_sysroot_usr_lib64=1
+          elif [[ -f "${conda_lib}/${lib}" ]]; then
+            need_conda_lib=1
+          elif [[ -f "${ghc_private}/${lib}" ]]; then
+            need_private=1
+          elif [[ -f "${haskell_dir}/${lib}" ]]; then
+            need_haskell_lib=1
+          elif [[ -f "${PREFIX}/lib/${lib}" ]]; then
+            need_prefix_lib=1
           fi
 
           if [[ ${need_private} == 0 ]] && [[ ${need_haskell_lib} == 0 ]] && [[ ${need_prefix_lib} == 0 ]] && [[ ${need_conda_lib} == 0 ]] && [[ ${need_sysroot_usr_lib64} == 0 ]] && [[ ${need_sysroot_lib64} == 0 ]]; then
@@ -84,12 +77,12 @@ fine_tune_linux_rpaths() {
         fi
 
         rpath=""
-        [[ $need_sysroot_lib64 == 1 ]]     && rpath="${rpath:+$rpath:}\$ORIGIN/$rpath_str/x86_64-conda-linux-gnu/sysroot/lib64"
-        [[ $need_sysroot_usr_lib64 == 1 ]] && rpath="${rpath:+$rpath:}\$ORIGIN/$rpath_str/x86_64-conda-linux-gnu/sysroot/usr/lib64"
-        [[ $need_conda_lib == 1 ]]         && rpath="${rpath:+$rpath:}\$ORIGIN/$rpath_str/x86_64-conda-linux-gnu/lib"
-        [[ $need_private == 1 ]]           && rpath="${rpath:+$rpath:}\$ORIGIN/$rpath_str/${private_rel}"
-        [[ $need_haskell_lib == 1 ]]       && rpath="${rpath:+$rpath:}\$ORIGIN/$rpath_str/${haskell_rel}"
-        [[ $need_prefix_lib == 1 ]]        && rpath="${rpath:+$rpath:}\$ORIGIN/$rpath_str/lib"
+        [[ $need_sysroot_lib64 == 1 ]]     && rpath="${rpath:+$rpath:}\$ORIGIN/$(realpath -m --relative-to="${base_dir}" "${sysroot_lib64}")"
+        [[ $need_sysroot_usr_lib64 == 1 ]] && rpath="${rpath:+$rpath:}\$ORIGIN/$(realpath -m --relative-to="${base_dir}" "${sysroot_usr_lib64}")"
+        [[ $need_conda_lib == 1 ]]         && rpath="${rpath:+$rpath:}\$ORIGIN/$(realpath -m --relative-to="${base_dir}" "${conda_lib}")"
+        [[ $need_private == 1 ]]           && rpath="${rpath:+$rpath:}\$ORIGIN/$(realpath -m --relative-to="${base_dir}" "${ghc_private}")"
+        [[ $need_haskell_lib == 1 ]]       && rpath="${rpath:+$rpath:}\$ORIGIN/$(realpath -m --relative-to="${base_dir}" "${haskell_dir}")"
+        [[ $need_prefix_lib == 1 ]]        && rpath="${rpath:+$rpath:}\$ORIGIN/$(realpath -m --relative-to="${base_dir}" "${PREFIX}/lib")"
 
         current_rpath=$(patchelf --print-rpath "${binary}" 2>/dev/null || echo "")
 
