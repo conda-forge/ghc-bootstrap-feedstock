@@ -26,20 +26,30 @@ update_settings() {
     perl -i -pe 's#($ENV{BUILD_PREFIX}|$ENV{PREFIX})/bin/##' "${settings_file}"
 
     # Fixing the sysroot
-    compiling="--sysroot=\\\$topdir/../../../../x86_64-conda-linux-gnu/sysroot"
-    compiling="${compiling} -isystem=\\\$topdir/../../../../x86_64-conda-linux-gnu/sysroot/usr/include -D_GNU_SOURCE"
+    compiling="--sysroot=\\\$topdir/../../../../${conda_triplet}/sysroot"
+    compiling="${compiling} -isystem=\\\$topdir/../../../../${conda_triplet}/sysroot/usr/include -D_GNU_SOURCE"
 
-    clang_linking="--sysroot=\\\$topdir/../../../../x86_64-conda-linux-gnu/sysroot"
-    clang_linking="${clang_linking} -Wl,-L\\\$topdir/../../../../x86_64-conda-linux-gnu/sysroot/lib64"
-    clang_linking="${clang_linking} -Wl,-L\\\$topdir/../../../../x86_64-conda-linux-gnu/sysroot/usr/lib64"
-    clang_linking="${clang_linking} -Wl,-L\\\$topdir/../../../../x86_64-conda-linux-gnu/lib"
+    clang_linking="--sysroot=\\\$topdir/../../../../${conda_triplet}/sysroot"
+    clang_linking="${clang_linking} -Wl,-L\\\$topdir/../../../../${conda_triplet}/sysroot/lib64"
+    clang_linking="${clang_linking} -Wl,-L\\\$topdir/../../../../${conda_triplet}/sysroot/usr/lib64"
+    clang_linking="${clang_linking} -Wl,-L\\\$topdir/../../../../${conda_triplet}/lib"
     clang_linking="${clang_linking} -Wl,-L\\\$topdir/../../../../lib"
 
-    ld_linking="--sysroot=\\\$topdir/../../../../x86_64-conda-linux-gnu/sysroot"
-    ld_linking="${ld_linking} -L\\\$topdir/../../../../x86_64-conda-linux-gnu/sysroot/lib64"
-    ld_linking="${ld_linking} -L\\\$topdir/../../../../x86_64-conda-linux-gnu/sysroot/usr/lib64"
-    ld_linking="${ld_linking} -L\\\$topdir/../../../../x86_64-conda-linux-gnu/lib"
+    ld_linking="--sysroot=\\\$topdir/../../../../${conda_triplet}/sysroot"
+    ld_linking="${ld_linking} -L\\\$topdir/../../../../${conda_triplet}/sysroot/lib64"
+    ld_linking="${ld_linking} -L\\\$topdir/../../../../${conda_triplet}/sysroot/usr/lib64"
+    ld_linking="${ld_linking} -L\\\$topdir/../../../../${conda_triplet}/lib"
     ld_linking="${ld_linking} -L\\\$topdir/../../../../lib"
+
+    if [[ "${target_platform}" == "linux-aarch64" ]]; then
+      clang_linking="${clang_linking} -Wl,-L\\\$topdir/../../../../${conda_triplet}/sysroot/lib"
+      clang_linking="${clang_linking} -Wl,-L\\\$topdir/../../../../${conda_triplet}/sysroot/usr/lib"
+      ld_linking="${ld_linking} -L\\\$topdir/../../../../${conda_triplet}/sysroot/lib"
+      ld_linking="${ld_linking} -L\\\$topdir/../../../../${conda_triplet}/sysroot/usr/lib"
+      # Private dir (libghc_glibc_compat.so): comma form only, never in "ld flags"
+      clang_linking="${clang_linking} -Wl,-L\\\$topdir/../../private -Wl,-rpath,\\\$topdir/../../private"
+      clang_linking="${clang_linking} -Wl,-rpath-link,\\\$topdir/../../private"
+    fi
 
     perl -i -pe "s#(C compiler flags\", \")#\1 ${compiling} #" "${settings_file}"
     perl -i -pe "s#(C\+\+ compiler flags\", \")#\1 ${compiling} #" "${settings_file}"
@@ -172,8 +182,88 @@ fine_tune_linux_rpaths() {
   done
 }
 
+patch_glibc_compat() {
+  # Make the deb10 aarch64 bindist usable against the glibc 2.17 sysroot
+  local ghc_installdir="${PREFIX}/ghc-bootstrap"
+  local privatedir="${ghc_installdir}/lib/private"
+  mkdir -p "${privatedir}"
+
+  echo "Patching glibc 2.27/2.28 symbol references"
+  ${CC} -shared -fPIC -O2 -Wl,-soname,libghc_glibc_compat.so -o "${privatedir}"/libghc_glibc_compat.so "${RECIPE_DIR}"/glibc_compat.c
+
+  # Static archives: fcntl64 and fcntl share the same ABI on aarch64
+  find "${ghc_installdir}" -type f -name 'libHSbase-*.a' | while read -r f; do
+    "${OBJCOPY:-${HOST}-objcopy}" --redefine-sym fcntl64=fcntl "$f"
+  done
+
+  # Shared objects and executables: drop the symbol version requirement
+  find "${ghc_installdir}" -type f | while read -r f; do
+    if file "$f" | grep -q ELF; then
+      dynsyms=$(readelf --dyn-syms -W "$f" 2>/dev/null || true)
+      needs_compat=0
+      for sym in fcntl64 logf powf expf; do
+        if grep -q "${sym}@GLIBC_2\.2[78]" <<< "$dynsyms"; then
+          patchelf --clear-symbol-version "${sym}" "$f"
+          if [[ "${sym}" == "fcntl64" ]]; then
+            needs_compat=1
+          fi
+        fi
+      done
+      if [[ "${needs_compat}" == "1" ]]; then
+        patchelf --add-needed libghc_glibc_compat.so "$f"
+        rel=$(realpath --relative-to="$(dirname "$f")" "${privatedir}")
+        current_rpath=$(patchelf --print-rpath "$f")
+        patchelf --set-rpath "\$ORIGIN/${rel}${current_rpath:+:$current_rpath}" "$f"
+      fi
+    fi
+  done
+
+  # Verification gate: nothing newer than glibc 2.17 may remain
+  local failed=0
+  while read -r f; do
+    if file "$f" | grep -q ELF; then
+      if readelf --dyn-syms -W "$f" 2>/dev/null | grep -Eq 'GLIBC_2\.(1[89]|2[0-9]|3[0-9])'; then
+        echo "ERROR: $f still references glibc newer than 2.17"
+        failed=1
+      fi
+    fi
+  done < <(find "${ghc_installdir}" -type f)
+  while read -r f; do
+    if readelf -s -W "$f" 2>/dev/null | grep -q 'UND fcntl64'; then
+      echo "ERROR: $f still has an undefined fcntl64 symbol"
+      failed=1
+    fi
+  done < <(find "${ghc_installdir}" -type f -name 'libHSbase-*.a')
+  if [[ "${failed}" != "0" ]]; then
+    exit 1
+  fi
+  echo "glibc 2.17 compatibility check passed"
+}
+
+add_libtinfo_runpath() {
+  echo "Adding conda lib RUNPATH for libtinfo consumers"
+  find "${PREFIX}/ghc-bootstrap" -type f | while read -r f; do
+    if file "$f" | grep -q ELF; then
+      needed=$(patchelf --print-needed "$f" 2>/dev/null || true)
+      if grep -q "libtinfo.so" <<< "$needed"; then
+        rel=$(realpath --relative-to="$(dirname "$f")" "${PREFIX}/lib")
+        current_rpath=$(patchelf --print-rpath "$f")
+        patchelf --set-rpath "\$ORIGIN/${rel}${current_rpath:+:$current_rpath}" "$f"
+        echo -n "."
+      fi
+    fi
+  done
+  echo " done"
+}
+
 unset build_alias
 unset host_alias
+
+if [[ "${target_platform}" == "linux-aarch64" ]]; then
+  conda_triplet="aarch64-conda-linux-gnu"
+else
+  conda_triplet="x86_64-conda-linux-gnu"
+fi
 
 # Create directories for binaries and logs
 mkdir -p "${PREFIX}"/ghc-bootstrap "${SRC_DIR}"/_logs
@@ -182,10 +272,17 @@ mkdir -p "${PREFIX}"/ghc-bootstrap "${SRC_DIR}"/_logs
 if [[ ! -d bootstrap-ghc ]]; then
   # Correct the libc.so script to avoid trying to load /lib64/libc.so.6
   if [[ "${target_platform}" == "linux-"* ]]; then
-    sysroot_libc_script="${BUILD_PREFIX}/x86_64-conda-linux-gnu/sysroot/usr/lib64/libc.so"
-    perl -i -pe "s|/lib64/libc.so.6|libc.so.6|g" "$sysroot_libc_script"
-    perl -i -pe "s|/usr/lib64/libc_nonshared.a|libc_nonshared.a|g" "$sysroot_libc_script"
-    perl -i -pe "s|/lib64/ld-linux-x86-64.so.2|ld-2.17.so|g" "$sysroot_libc_script"
+    sysroot_libc_script="${BUILD_PREFIX}/${conda_triplet}/sysroot/usr/lib64/libc.so"
+    if [[ ! -f "${sysroot_libc_script}" ]]; then
+      sysroot_libc_script="${BUILD_PREFIX}/${conda_triplet}/sysroot/usr/lib/libc.so"
+    fi
+    if [[ "${target_platform}" == "linux-aarch64" ]]; then
+      perl -i -pe 's#/(?:usr/)?lib(?:64)?/##g' "$sysroot_libc_script"
+    else
+      perl -i -pe "s|/lib64/libc.so.6|libc.so.6|g" "$sysroot_libc_script"
+      perl -i -pe "s|/usr/lib64/libc_nonshared.a|libc_nonshared.a|g" "$sysroot_libc_script"
+      perl -i -pe "s|/lib64/ld-linux-x86-64.so.2|ld-2.17.so|g" "$sysroot_libc_script"
+    fi
   fi
 
   echo "Configuring ..."
@@ -213,28 +310,37 @@ if [[ ! -d bootstrap-ghc ]]; then
 
   if [[ "${target_platform}" == "linux-"* ]]; then
     # --- Mock PREFIX-installed sysroot for fine-tuning of RPATHs
-    mkdir -p "${PREFIX}"/x86_64-conda-linux-gnu/{sysroot,lib}
-    cp -r "${BUILD_PREFIX}"/x86_64-conda-linux-gnu/sysroot "${PREFIX}"/x86_64-conda-linux-gnu
-    cp -r "${BUILD_PREFIX}"/x86_64-conda-linux-gnu/lib/libgcc_s* "${PREFIX}"/x86_64-conda-linux-gnu/lib
+    mkdir -p "${PREFIX}"/${conda_triplet}/{sysroot,lib}
+    cp -r "${BUILD_PREFIX}"/${conda_triplet}/sysroot "${PREFIX}"/${conda_triplet}
+    cp -r "${BUILD_PREFIX}"/${conda_triplet}/lib/libgcc_s* "${PREFIX}"/${conda_triplet}/lib
 
-    # Copy ncurses 5 shared libraries to private location
-    echo "Bundling ncurses 5 libraries privately"
-    mkdir -p "${PREFIX}"/ghc-bootstrap/lib/private
-    cp "${BUILD_PREFIX}"/lib/libncurses.so.5* "${PREFIX}"/ghc-bootstrap/lib/private/ 2>/dev/null || true
-    cp "${BUILD_PREFIX}"/lib/libtinfo.so.5* "${PREFIX}"/ghc-bootstrap/lib/private/ 2>/dev/null || true
-    cp "${BUILD_PREFIX}"/lib/libtinfow.so.5* "${PREFIX}"/ghc-bootstrap/lib/private/ 2>/dev/null || true
+    if [[ "${target_platform}" == "linux-aarch64" ]]; then
+      patch_glibc_compat
+      add_libtinfo_runpath
+      # Build-time test: help the linker find libgmp
+      export LD_LIBRARY_PATH="${BUILD_PREFIX}/lib:${LD_LIBRARY_PATH:-}"
+      ghc_extra_args=(-L"${BUILD_PREFIX}"/lib)
+    else
+      # Copy ncurses 5 shared libraries to private location
+      echo "Bundling ncurses 5 libraries privately"
+      mkdir -p "${PREFIX}"/ghc-bootstrap/lib/private
+      cp "${BUILD_PREFIX}"/lib/libncurses.so.5* "${PREFIX}"/ghc-bootstrap/lib/private/ 2>/dev/null || true
+      cp "${BUILD_PREFIX}"/lib/libtinfo.so.5* "${PREFIX}"/ghc-bootstrap/lib/private/ 2>/dev/null || true
+      cp "${BUILD_PREFIX}"/lib/libtinfow.so.5* "${PREFIX}"/ghc-bootstrap/lib/private/ 2>/dev/null || true
 
-    # We seem to have an issue with using a loader different than 2.17 for ghc-pkg
-    cp "${BUILD_PREFIX}"/x86_64-conda-linux-gnu/sysroot/lib64/ld-2.17.so* "${PREFIX}"/ghc-bootstrap/lib/private/ 2>/dev/null || true
-    
-    # Fine tune RPATHs
-    fine_tune_linux_rpaths
+      # We seem to have an issue with using a loader different than 2.17 for ghc-pkg
+      cp "${BUILD_PREFIX}"/x86_64-conda-linux-gnu/sysroot/lib64/ld-2.17.so* "${PREFIX}"/ghc-bootstrap/lib/private/ 2>/dev/null || true
+
+      # Fine tune RPATHs
+      fine_tune_linux_rpaths
+      ghc_extra_args=()
+    fi
 
     # Verify sysroot compatibility
     echo "Verify sysroot compatibility"
     "${PREFIX}"/ghc-bootstrap/bin/ghc-pkg recache
     printf 'import System.Posix.Signals\nmain = installHandler sigTERM Default Nothing >> putStrLn "Signal test"\n' > signal_test.hs
-    "${PREFIX}"/ghc-bootstrap/bin/ghc signal_test.hs 2>/dev/null || exit 1
+    "${PREFIX}"/ghc-bootstrap/bin/ghc "${ghc_extra_args[@]}" signal_test.hs 2>/dev/null || exit 1
     if [[ -f ./signal_test ]] && ./signal_test; then
       echo "Signal test passed"
     else
@@ -242,7 +348,7 @@ if [[ ! -d bootstrap-ghc ]]; then
       exit 1
     fi
 
-    rm -rf "${PREFIX}"/x86_64-conda-linux-gnu
+    rm -rf "${PREFIX}"/${conda_triplet}
   fi
   
   # Reduce footprint
