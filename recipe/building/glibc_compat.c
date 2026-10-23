@@ -5,6 +5,22 @@
  */
 #include <fcntl.h>
 #include <stdarg.h>
+#include <unistd.h>
+
+/* Also provides statx and memfd_create via raw aarch64 syscalls. */
+long syscall(long number, ...);
+
+/* statx: aarch64 syscall 291 */
+int statx(int dirfd, const char *path, int flags, unsigned int mask, void *buf)
+{
+  return (int)syscall(291, dirfd, path, flags, mask, buf);
+}
+
+/* memfd_create: aarch64 syscall 279 */
+int memfd_create(const char *name, unsigned int flags)
+{
+  return (int)syscall(279, name, flags);
+}
 
 int fcntl64(int fd, int cmd, ...)
 {
