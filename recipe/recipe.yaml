@@ -6,14 +6,22 @@ package:
   version: ${{ version }}
 
 source:
-  - if: osx
+  - if: osx and x86_64
     then:
       url: https://downloads.haskell.org/~ghc/${{ version }}/ghc-${{ version }}-x86_64-apple-darwin.tar.xz
       sha256: de7baacfb1513ab0e4ccf8911045cceee84bc8a4e39b89bd975ed3135e5f7d96
-  - if: linux
+  - if: osx and arm64
+    then:
+      url: https://downloads.haskell.org/~ghc/${{ version }}/ghc-${{ version }}-aarch64-apple-darwin.tar.xz
+      sha256: e2f12a922754fd28511512875bf6d9eb3e0cce7fc963a7266f6e1661aeabd7ed
+  - if: linux and x86_64
     then:
       url: https://downloads.haskell.org/~ghc/${{ version }}/ghc-${{ version }}-x86_64-centos7-linux.tar.xz
       sha256: d2f2da6e93ceaa45a1c820720f75b0d06f624aed2377cc777366be8449dbd17f
+  - if: linux and aarch64
+    then:
+      url: https://downloads.haskell.org/~ghc/${{ version }}/ghc-${{ version }}-aarch64-deb10-linux.tar.xz
+      sha256: 15cf9341437af2c6f75bbaf8222824f5b51c32f0637ed054513f165999b0a87d
   - if: not unix
     then:
       url: https://downloads.haskell.org/~ghc/${{ version }}/ghc-${{ version }}-x86_64-unknown-mingw32.tar.xz
@@ -21,27 +29,39 @@ source:
       target_directory: bootstrap-ghc
 
 build:
-  number: 3
+  number: 4
   dynamic_linking:
     binary_relocation:
       - ghc-bootstrap/lib/${{ version }}/bin/*
   prefix_detection:
     ignore:
       - ghc-bootstrap/**/*.so
-  # We will not need x-compiled ghc-bootstrap
-  skip: aarch64 or ppc64le or arm64
+  # No upstream bindist exists for ppc64le and win-arm64
+  skip: ppc64le or (win and arm64)
 
 requirements:
   build:
-    - ${{ compiler('c') }}
-    - ${{ compiler('cxx') }}
-    - ${{ stdlib('c') }}
+    - if: win
+      then:
+        - ${{ compiler('m2w64_c') }}
+        - ${{ compiler('m2w64_cxx') }}
+        - ${{ stdlib('m2w64_c') }}
+      else:
+        - ${{ compiler('c') }}
+        - ${{ compiler('cxx') }}
+        - ${{ stdlib('c') }}
     - perl 5.32.1.*
 
     - if: linux
       then:
-        - ncurses <6,>=5
         - patchelf
+    - if: linux and x86_64
+      then:
+        - ncurses <6,>=5
+    - if: linux and aarch64
+      then:
+        - ncurses
+        - binutils
 
     - if: unix
       then:
@@ -62,6 +82,8 @@ requirements:
     - gmp
     - libffi
     - libiconv
+    - if: linux and aarch64
+      then: ncurses
     - if: not unix
       then: binutils
     
@@ -88,12 +110,16 @@ tests:
         - ghc-bootstrap/bin/runhaskell-${{ version }}${{ "" if unix else ".exe" }}
         - ghc-bootstrap/bin/runhaskell${{ "" if unix else ".exe" }}
         
-        - if: linux
+        - if: linux and x86_64
           then:
             - ghc-bootstrap/lib/private/libncurses.so.5
             - ghc-bootstrap/lib/private/libtinfo.so.5
             - ghc-bootstrap/lib/private/libtinfow.so.5
             - ghc-bootstrap/lib/private/ld-2.17.so
+
+        - if: linux and aarch64
+          then:
+            - ghc-bootstrap/lib/private/libghc_glibc_compat.so
 
         - if: unix
           then:
@@ -127,8 +153,13 @@ tests:
           - CALL %PREFIX%/ghc-bootstrap/bin/windres.bat --help
     requirements:
       run:
-        - ${{ compiler('c') }}
-        - ${{ stdlib('c') }}
+        - if: win
+          then:
+            - ${{ compiler('m2w64_c') }}
+            - ${{ stdlib('m2w64_c') }}
+          else:
+            - ${{ compiler('c') }}
+            - ${{ stdlib('c') }}
         - if: not unix
           then: binutils
 
@@ -146,8 +177,13 @@ tests:
         - testing/
     requirements:
       run:
-        - ${{ compiler('c') }}
-        - ${{ stdlib('c') }}
+        - if: win
+          then:
+            - ${{ compiler('m2w64_c') }}
+            - ${{ stdlib('m2w64_c') }}
+          else:
+            - ${{ compiler('c') }}
+            - ${{ stdlib('c') }}
         - if: not unix
           then: binutils
 
