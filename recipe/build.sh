@@ -342,7 +342,7 @@ if [[ ! -d bootstrap-ghc ]]; then
     update_settings
   fi
 
-  if [[ "${target_platform}" == "linux-x86_64" ]]; then
+  if [[ "${target_platform}" == "linux-64" ]]; then
     # --- Mock PREFIX-installed sysroot for fine-tuning of RPATHs
     mkdir -p "${PREFIX}"/x86_64-conda-linux-gnu/{sysroot,lib}
     cp -r "${BUILD_PREFIX}"/x86_64-conda-linux-gnu/sysroot "${PREFIX}"/x86_64-conda-linux-gnu
