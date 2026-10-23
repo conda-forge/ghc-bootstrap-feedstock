@@ -5,6 +5,18 @@
  */
 #include <fcntl.h>
 #include <stdarg.h>
+#include <unistd.h>
+
+/* aarch64 syscall numbers: statx=291, memfd_create=279 */
+int statx(int dirfd, const char *path, int flags, unsigned int mask, void *buf)
+{
+  return (int)syscall(291, dirfd, path, flags, mask, buf);
+}
+
+int memfd_create(const char *name, unsigned int flags)
+{
+  return (int)syscall(279, name, flags);
+}
 
 int fcntl64(int fd, int cmd, ...)
 {

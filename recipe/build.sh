@@ -191,10 +191,10 @@ patch_glibc_2_17_aarch64() {
     if file "$f" | grep -q ELF; then
       dynsyms=$(readelf --dyn-syms -W "$f" 2>/dev/null || true)
       needs_compat=0
-      for sym in fcntl64 logf powf expf; do
-        if grep -q "${sym}@GLIBC_2\.2[78]" <<< "$dynsyms"; then
+      for sym in fcntl64 statx memfd_create logf powf expf; do
+        if grep -Eq "${sym}@GLIBC_2\.(2[0-9]|1[89])" <<< "$dynsyms"; then
           patchelf --clear-symbol-version "${sym}" "$f"
-          if [[ "${sym}" == "fcntl64" ]]; then
+          if [[ "${sym}" == "fcntl64" || "${sym}" == "statx" || "${sym}" == "memfd_create" ]]; then
             needs_compat=1
           fi
         fi
@@ -215,6 +215,7 @@ patch_glibc_2_17_aarch64() {
     if file "$f" | grep -q ELF; then
       if readelf --dyn-syms -W "$f" 2>/dev/null | grep -Eq 'GLIBC_2\.(1[89]|2[0-9]|3[0-9])'; then
         echo "ERROR: $f still references glibc newer than 2.17"
+        readelf --dyn-syms -W "$f" 2>/dev/null | grep -E 'GLIBC_2\.(1[89]|2[0-9]|3[0-9])' || true
         glibc_check_failed=1
       fi
     fi
@@ -240,7 +241,7 @@ update_settings_linux_aarch64() {
   perl -i -pe 's#($ENV{BUILD_PREFIX}|$ENV{PREFIX})/bin/##g' "${settings_file}"
 
   # Add conda libs and private libs (comma form only; never in "ld flags")
-  perl -i -pe "s#(C compiler link flags\", \")([^\"]*)\"#\1\2 -Wl,-L${settings_topdir}/lib -Wl,-rpath,${settings_topdir}/lib -Wl,-rpath-link,${settings_topdir}/lib -Wl,-L${settings_private} -Wl,-rpath,${settings_private} -Wl,-rpath-link,${settings_private}\"#g" "${settings_file}"
+  perl -i -pe "s#(C compiler link flags\", \")([^\"]*)\"#\1\2 -Wl,-L${settings_topdir}/lib -Wl,-rpath,${settings_topdir}/lib -Wl,-rpath-link,${settings_topdir}/lib -Wl,-L${settings_private} -Wl,-rpath,${settings_private} -Wl,-rpath-link,${settings_private} -Wl,-L${settings_private} -lghc_glibc_compat\"#g" "${settings_file}"
   perl -i -pe "s#(ld flags\", \")([^\"]*)\"#\1\2 -L${settings_topdir}/lib -rpath ${settings_topdir}/lib -rpath-link ${settings_topdir}/lib\"#g" "${settings_file}"
 
   # Add sysroot
