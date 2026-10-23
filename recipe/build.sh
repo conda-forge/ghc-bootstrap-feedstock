@@ -35,6 +35,7 @@ update_settings() {
       clang_linking="${clang_linking} -Wl,-L${sysroot_rel}/lib -Wl,-L${sysroot_rel}/usr/lib"
       clang_linking="${clang_linking} -Wl,-L\\\$topdir/../../../../lib -Wl,-rpath,\\\$topdir/../../../../lib -Wl,-rpath-link,\\\$topdir/../../../../lib"
       clang_linking="${clang_linking} -Wl,-L${private_rel} -Wl,-rpath,${private_rel} -Wl,-rpath-link,${private_rel}"
+      clang_linking="${clang_linking} -L${private_rel} -lghc_glibc_compat"
 
       ld_linking="-L${sysroot_rel}/lib64 -L${sysroot_rel}/usr/lib64"
       ld_linking="${ld_linking} -L${sysroot_rel}/lib -L${sysroot_rel}/usr/lib"
@@ -237,10 +238,10 @@ patch_glibc_compat_aarch64() {
     if file "$f" | grep -q ELF; then
       dynsyms=$(readelf --dyn-syms -W "$f" 2>/dev/null || true)
       needs_compat=0
-      for sym in fcntl64 logf powf expf; do
-        if grep -q "${sym}@GLIBC_2\.2[78]" <<< "$dynsyms"; then
+      for sym in fcntl64 statx memfd_create logf powf expf; do
+        if grep -Eq "${sym}@GLIBC_2\.(2[0-9]|1[89])" <<< "$dynsyms"; then
           patchelf --clear-symbol-version "${sym}" "$f"
-          if [[ "${sym}" == "fcntl64" ]]; then
+          if [[ "${sym}" == "fcntl64" || "${sym}" == "statx" || "${sym}" == "memfd_create" ]]; then
             needs_compat=1
           fi
         fi
@@ -260,6 +261,7 @@ patch_glibc_compat_aarch64() {
     if file "$f" | grep -q ELF; then
       if readelf --dyn-syms -W "$f" 2>/dev/null | grep -Eq 'GLIBC_2\.(1[89]|2[0-9]|3[0-9])'; then
         echo "ERROR: $f still references glibc newer than 2.17"
+        readelf --dyn-syms -W "$f" 2>/dev/null | grep -E 'GLIBC_2\.(1[89]|2[0-9]|3[0-9])' || true
         glibc_check_failed=1
       fi
     fi
