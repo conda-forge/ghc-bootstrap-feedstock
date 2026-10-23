@@ -76,12 +76,12 @@ if [[ ! -d bootstrap-ghc ]]; then
       if file "$f" | grep -q ELF; then
         dynsyms=$(readelf --dyn-syms -W "$f" 2>/dev/null || true)
         needs_compat=0
-        for sym in fcntl64 logf powf expf; do
-          if grep -q "${sym}@GLIBC_2\.2[78]" <<< "$dynsyms"; then
+        for sym in fcntl64 statx memfd_create logf powf expf; do
+          if grep -Eq "${sym}@GLIBC_2\.(2[0-9]|1[89])" <<< "$dynsyms"; then
             patchelf --clear-symbol-version "${sym}" "$f"
-            if [[ "${sym}" == "fcntl64" ]]; then
-              needs_compat=1
-            fi
+            case "${sym}" in
+              fcntl64|statx|memfd_create) needs_compat=1 ;;
+            esac
           fi
         done
         if [[ "${needs_compat}" == "1" ]]; then
@@ -100,6 +100,7 @@ if [[ ! -d bootstrap-ghc ]]; then
       if file "$f" | grep -q ELF; then
         if readelf --dyn-syms -W "$f" 2>/dev/null | grep -Eq 'GLIBC_2\.(1[89]|2[0-9]|3[0-9])'; then
           echo "ERROR: $f still references glibc newer than 2.17"
+          readelf --dyn-syms -W "$f" 2>/dev/null | grep -E 'GLIBC_2\.(1[89]|2[0-9]|3[0-9])' || true
           glibc_check_failed=1
         fi
       fi
@@ -135,19 +136,29 @@ if [[ ! -d bootstrap-ghc ]]; then
     # Private dir and sysroot paths: comma form only, nothing goes in "ld flags"
     perl -i -pe "s#(C compiler flags\", \")([^\"]*)\"#\1\2 -I${settings_topdir}/${conda_triplet}/sysroot/usr/include\"#g" "${settings_file}"
     perl -i -pe "s#(C\+\+ compiler flags\", \")([^\"]*)\"#\1\2 -I${settings_topdir}/${conda_triplet}/sysroot/usr/include\"#g" "${settings_file}"
-    perl -i -pe "s#(C compiler link flags\", \")([^\"]*)\"#\1\2 -Wl,-rpath-link,${settings_topdir}/lib -Wl,-L${settings_private} -Wl,-rpath,${settings_private} -Wl,-rpath-link,${settings_private}\"#g" "${settings_file}"
+    perl -i -pe "s#(C compiler link flags\", \")([^\"]*)\"#\1\2 -Wl,-rpath-link,${settings_topdir}/lib -Wl,-L${settings_private} -Wl,-rpath,${settings_private} -Wl,-rpath-link,${settings_private} -L${settings_private} -lghc_glibc_compat\"#g" "${settings_file}"
     perl -i -pe "s#(C compiler link flags\", \")([^\"]*)\"#\1\2 -Wl,-L${settings_topdir}/${conda_triplet}/sysroot/lib64 -Wl,-L${settings_topdir}/${conda_triplet}/sysroot/usr/lib64 -Wl,-L${settings_topdir}/${conda_triplet}/sysroot/lib -Wl,-L${settings_topdir}/${conda_triplet}/sysroot/usr/lib\"#g" "${settings_file}"
   fi
 
   if [[ "${target_platform}" == "osx-"* ]]; then
     perl -i -pe 's#("C compiler flags", ")([^"]*)"#\1\2 -mmacosx-version-min=11.0"#g' "${settings_file}"
-    perl -i -pe 's#("C compiler link flags", ")([^"]*)"#\1\2 -mmacosx-version-min=11.0"#g' "${settings_file}"
+    perl -i -pe "s#(C compiler link flags\", \")([^\"]*)\"#\1\2 -mmacosx-version-min=11.0 -L${settings_topdir}/lib -liconv\"#g" "${settings_file}"
+    test_ghc_flags="-L${PREFIX}/lib"
   fi
 
   # We enforce prioritizing the sysroot for self-consistently finding the libraries
   if [[ "${target_platform}" == "linux-x86_64" ]]; then
     echo "Bundling ncurses 5 libraries privately"
-    cp "${BUILD_PREFIX}"/lib/lib{ncurses,tinfo,tinfow}.so.5* "${ghc_private}"/
+    # cp -L: dereference symlinks so real files land in the private dir
+    for n in ncurses tinfo tinfow; do
+      src=$(ls "${BUILD_PREFIX}"/lib/lib${n}.so.5* 2>/dev/null | head -n 1 || true)
+      if [[ -z "${src}" ]]; then
+        echo "ERROR: lib${n}.so.5 not found in ${BUILD_PREFIX}/lib"
+        ls "${BUILD_PREFIX}"/lib | grep -E 'ncurses|tinfo' || true
+        exit 1
+      fi
+      cp -L "${src}" "${ghc_private}/lib${n}.so.5"
+    done
 
     echo "Patching binaries"
     find "${ghc_libdir}"/bin -maxdepth 1 -type f -executable | while read -r binary; do
@@ -208,7 +219,7 @@ if [[ ! -d bootstrap-ghc ]]; then
     test_ghc_flags="-L${BUILD_PREFIX}/lib"
   fi
   if [[ "${target_platform}" == "osx-arm64" ]]; then
-    test_ghc_flags="-L${BUILD_PREFIX}/lib"
+    test_ghc_flags="-L${BUILD_PREFIX}/lib -L${PREFIX}/lib"
   fi
 
   # Verify sysroot compatibility

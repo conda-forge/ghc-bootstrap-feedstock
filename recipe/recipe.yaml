@@ -81,6 +81,9 @@ requirements:
       then:
         - gmp
         - ncurses
+    - if: osx
+      then:
+        - libiconv
     - if: not unix
       then: binutils
 
