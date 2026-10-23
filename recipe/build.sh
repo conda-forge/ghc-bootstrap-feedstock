@@ -25,6 +25,30 @@ update_settings() {
     # On occasion, the build_prefix was hardcoded
     perl -i -pe 's#($ENV{BUILD_PREFIX}|$ENV{PREFIX})/bin/##' "${settings_file}"
 
+    if [[ "${target_platform}" == "linux-aarch64" ]]; then
+      sysroot_rel="\\\$topdir/../../../../aarch64-conda-linux-gnu/sysroot"
+      private_rel="\\\$topdir/../../private"
+
+      compiling="-I${sysroot_rel}/usr/include"
+
+      clang_linking="-Wl,-L${sysroot_rel}/lib64 -Wl,-L${sysroot_rel}/usr/lib64"
+      clang_linking="${clang_linking} -Wl,-L${sysroot_rel}/lib -Wl,-L${sysroot_rel}/usr/lib"
+      clang_linking="${clang_linking} -Wl,-L\\\$topdir/../../../../lib -Wl,-rpath,\\\$topdir/../../../../lib -Wl,-rpath-link,\\\$topdir/../../../../lib"
+      clang_linking="${clang_linking} -Wl,-L${private_rel} -Wl,-rpath,${private_rel} -Wl,-rpath-link,${private_rel}"
+
+      ld_linking="-L${sysroot_rel}/lib64 -L${sysroot_rel}/usr/lib64"
+      ld_linking="${ld_linking} -L${sysroot_rel}/lib -L${sysroot_rel}/usr/lib"
+      ld_linking="${ld_linking} -L\\\$topdir/../../../../lib -rpath \\\$topdir/../../../../lib -rpath-link \\\$topdir/../../../../lib"
+
+      perl -i -pe "s#(C compiler flags\", \")#\1 ${compiling} #" "${settings_file}"
+      perl -i -pe "s#(C\+\+ compiler flags\", \")#\1 ${compiling} #" "${settings_file}"
+      perl -i -pe "s#(Haskell CPP flags\", \")#\1 ${compiling} #" "${settings_file}"
+      perl -i -pe "s#(link flags\", \")#\1 ${clang_linking} #" "${settings_file}"
+      perl -i -pe "s#(ld flags\", \")#\1 ${ld_linking} #" "${settings_file}"
+      perl -i -pe "s#(compiler supports -no-pie\", \")[^\"]*\"#\1YES\"#g" "${settings_file}"
+      return 0
+    fi
+
     # Fixing the sysroot
     compiling="--sysroot=\\\$topdir/../../../../x86_64-conda-linux-gnu/sysroot"
     compiling="${compiling} -isystem=\\\$topdir/../../../../x86_64-conda-linux-gnu/sysroot/usr/include -D_GNU_SOURCE"
@@ -192,6 +216,84 @@ fine_tune_linux_rpaths() {
   done
 }
 
+# linux-aarch64: make the deb10 bindist usable against the glibc 2.17 sysroot
+patch_glibc_compat_aarch64() {
+  local install_dir="${PREFIX}/ghc-bootstrap"
+  local private_dir="${install_dir}/lib/private"
+  local f sym rel current_rpath needs_compat dynsyms glibc_check_failed
+
+  echo "Patching glibc 2.27/2.28 symbol references"
+  mkdir -p "${private_dir}"
+  ${CC} -shared -fPIC -O2 -Wl,-soname,libghc_glibc_compat.so \
+    -o "${private_dir}"/libghc_glibc_compat.so "${RECIPE_DIR}"/glibc_compat.c
+
+  # Static archives: fcntl64 and fcntl share the same ABI on aarch64
+  find "${install_dir}" -type f -name 'libHSbase-*.a' | while read -r f; do
+    "${OBJCOPY:-${HOST}-objcopy}" --redefine-sym fcntl64=fcntl "$f"
+  done
+
+  # Shared objects and executables: drop the symbol version requirement
+  find "${install_dir}" -type f | while read -r f; do
+    if file "$f" | grep -q ELF; then
+      dynsyms=$(readelf --dyn-syms -W "$f" 2>/dev/null || true)
+      needs_compat=0
+      for sym in fcntl64 logf powf expf; do
+        if grep -q "${sym}@GLIBC_2\.2[78]" <<< "$dynsyms"; then
+          patchelf --clear-symbol-version "${sym}" "$f"
+          if [[ "${sym}" == "fcntl64" ]]; then
+            needs_compat=1
+          fi
+        fi
+      done
+      if [[ "${needs_compat}" == "1" ]]; then
+        patchelf --add-needed libghc_glibc_compat.so "$f"
+        rel=$(realpath --relative-to="$(dirname "$f")" "${private_dir}")
+        current_rpath=$(patchelf --print-rpath "$f")
+        patchelf --set-rpath "\$ORIGIN/${rel}${current_rpath:+:$current_rpath}" "$f"
+      fi
+    fi
+  done
+
+  # Verification gate: nothing newer than glibc 2.17 may remain
+  glibc_check_failed=0
+  while read -r f; do
+    if file "$f" | grep -q ELF; then
+      if readelf --dyn-syms -W "$f" 2>/dev/null | grep -Eq 'GLIBC_2\.(1[89]|2[0-9]|3[0-9])'; then
+        echo "ERROR: $f still references glibc newer than 2.17"
+        glibc_check_failed=1
+      fi
+    fi
+  done < <(find "${install_dir}" -type f)
+  while read -r f; do
+    if readelf -s -W "$f" 2>/dev/null | grep -q 'UND fcntl64'; then
+      echo "ERROR: $f still has an undefined fcntl64 symbol"
+      glibc_check_failed=1
+    fi
+  done < <(find "${install_dir}" -type f -name 'libHSbase-*.a')
+  if [[ "${glibc_check_failed}" != "0" ]]; then
+    exit 1
+  fi
+  echo "glibc 2.17 compatibility check passed"
+}
+
+# linux-aarch64: add conda lib RUNPATH for libtinfo consumers
+add_tinfo_runpath() {
+  local f needed rel current_rpath
+  echo "Adding conda lib RUNPATH for libtinfo consumers"
+  find "${PREFIX}/ghc-bootstrap" -type f | while read -r f; do
+    if file "$f" | grep -q ELF; then
+      needed=$(patchelf --print-needed "$f" 2>/dev/null || true)
+      if grep -q "libtinfo.so" <<< "$needed"; then
+        rel=$(realpath --relative-to="$(dirname "$f")" "${PREFIX}/lib")
+        current_rpath=$(patchelf --print-rpath "$f")
+        patchelf --set-rpath "\$ORIGIN/${rel}${current_rpath:+:$current_rpath}" "$f"
+        echo -n "."
+      fi
+    fi
+  done
+  echo " done"
+}
+
 unset build_alias
 unset host_alias
 
@@ -202,10 +304,18 @@ mkdir -p "${PREFIX}"/ghc-bootstrap "${SRC_DIR}"/_logs
 if [[ ! -d bootstrap-ghc ]]; then
   # Correct the libc.so script to avoid trying to load /lib64/libc.so.6
   if [[ "${target_platform}" == "linux-"* ]]; then
-    sysroot_libc_script="${BUILD_PREFIX}/x86_64-conda-linux-gnu/sysroot/usr/lib64/libc.so"
-    perl -i -pe "s|/lib64/libc.so.6|libc.so.6|g" "$sysroot_libc_script"
-    perl -i -pe "s|/usr/lib64/libc_nonshared.a|libc_nonshared.a|g" "$sysroot_libc_script"
-    perl -i -pe "s|/lib64/ld-linux-x86-64.so.2|ld-2.17.so|g" "$sysroot_libc_script"
+    sysroot_triplet="${target_platform#linux-}-conda-linux-gnu"
+    sysroot_libc_script="${BUILD_PREFIX}/${sysroot_triplet}/sysroot/usr/lib64/libc.so"
+    if [[ ! -f "${sysroot_libc_script}" ]]; then
+      sysroot_libc_script="${BUILD_PREFIX}/${sysroot_triplet}/sysroot/usr/lib/libc.so"
+    fi
+    if [[ "${target_platform}" == "linux-aarch64" ]]; then
+      perl -i -pe 's#/(?:usr/)?lib(?:64)?/##g' "$sysroot_libc_script"
+    else
+      perl -i -pe "s|/lib64/libc.so.6|libc.so.6|g" "$sysroot_libc_script"
+      perl -i -pe "s|/usr/lib64/libc_nonshared.a|libc_nonshared.a|g" "$sysroot_libc_script"
+      perl -i -pe "s|/lib64/ld-linux-x86-64.so.2|ld-2.17.so|g" "$sysroot_libc_script"
+    fi
   fi
 
   echo "Configuring ..."
@@ -231,7 +341,26 @@ if [[ ! -d bootstrap-ghc ]]; then
   # Update the installed settings file (find custom libraries, set sysroot, ...)
   update_settings
 
-  if [[ "${target_platform}" == "linux-"* ]]; then
+  if [[ "${target_platform}" == "linux-aarch64" ]]; then
+    patch_glibc_compat_aarch64
+    add_tinfo_runpath
+
+    # Verify sysroot compatibility
+    echo "Verify sysroot compatibility"
+    printf 'import System.Posix.Signals\nmain = installHandler sigTERM Default Nothing >> putStrLn "Signal test"\n' > signal_test.hs
+    export LD_LIBRARY_PATH="${BUILD_PREFIX}/lib:${LD_LIBRARY_PATH:-}"
+    ghc_test_log="${SRC_DIR}"/_logs/ghc_signal_test.log
+    "${PREFIX}"/ghc-bootstrap/bin/ghc -v -L"${BUILD_PREFIX}"/lib signal_test.hs >> "${ghc_test_log}" 2>&1 || {
+      cat "${ghc_test_log}"
+      exit 1
+    }
+    if ./signal_test; then
+      echo "Signal test passed"
+    else
+      echo "Signal test failed with exit code $?"
+      exit 1
+    fi
+  elif [[ "${target_platform}" == "linux-"* ]]; then
     # --- Mock PREFIX-installed sysroot for fine-tuning of RPATHs
     mkdir -p "${PREFIX}"/x86_64-conda-linux-gnu/{sysroot,lib}
     cp -r "${BUILD_PREFIX}"/x86_64-conda-linux-gnu/sysroot "${PREFIX}"/x86_64-conda-linux-gnu
