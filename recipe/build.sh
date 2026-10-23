@@ -142,7 +142,14 @@ if [[ ! -d bootstrap-ghc ]]; then
 
   if [[ "${target_platform}" == "osx-"* ]]; then
     perl -i -pe 's#("C compiler flags", ")([^"]*)"#\1\2 -mmacosx-version-min=11.0"#g' "${settings_file}"
-    perl -i -pe "s#(C compiler link flags\", \")([^\"]*)\"#\1\2 -mmacosx-version-min=11.0 -L${settings_topdir}/lib -liconv\"#g" "${settings_file}"
+    # conda libiconv exports _libiconv* names; build a shim providing _iconv*
+    mkdir -p "${ghc_private}"
+    ${CC} -dynamiclib -o "${ghc_private}"/libiconv_compat.dylib "${RECIPE_DIR}"/osx_iconv_compat.c \
+      -L"${PREFIX}/lib" -liconv \
+      -Wl,-rpath,"${PREFIX}/lib" \
+      -mmacosx-version-min=11.0 \
+      -install_name "@rpath/libiconv_compat.dylib"
+    perl -i -pe "s#(C compiler link flags\", \")([^\"]*)\"#\1\2 -mmacosx-version-min=11.0 -L${settings_topdir}/lib -L${settings_private} -Wl,-rpath,${settings_private} -liconv_compat\"#g" "${settings_file}"
     test_ghc_flags="-L${PREFIX}/lib"
   fi
 
@@ -229,6 +236,11 @@ if [[ ! -d bootstrap-ghc ]]; then
     mkdir -p "${PREFIX}/${conda_triplet}" && ln -s "${BUILD_PREFIX}/${conda_triplet}"/sysroot "${PREFIX}/${conda_triplet}"/sysroot
   fi
   ghc_test_log="${SRC_DIR}"/_logs/ghc_signal_test.log
+  saved_ld_library_path="${LD_LIBRARY_PATH:-}"
+  if [[ "${target_platform}" == "linux-64" ]]; then
+    # Smoke test only: prefer conda runtime libs (libgcc_s) over the host ones
+    export LD_LIBRARY_PATH="${BUILD_PREFIX}/lib:${PREFIX}/lib:${LD_LIBRARY_PATH:-}"
+  fi
   "${ghc_root}"/bin/ghc -v ${test_ghc_flags} signal_test.hs >> "${ghc_test_log}" 2>&1 || {
     cat "${ghc_test_log}"
     exit 1
@@ -239,6 +251,7 @@ if [[ ! -d bootstrap-ghc ]]; then
     echo "Signal test failed with exit code $?"
     exit 1
   fi
+  export LD_LIBRARY_PATH="${saved_ld_library_path}"
   if [[ "${target_platform}" == "linux-"* ]]; then
     rm -rf "${PREFIX:?}/${conda_triplet}"
   fi

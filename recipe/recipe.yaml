@@ -54,6 +54,7 @@ requirements:
     - if: linux and x86_64
       then:
         - ncurses <6,>=5
+        - libgcc
     - if: linux and aarch64
       then:
         - ncurses
@@ -143,6 +144,10 @@ tests:
         - if: linux and aarch64
           then:
             - ghc-bootstrap/lib/ghc-${{ version }}/lib/private/libghc_glibc_compat.so
+
+        - if: osx
+          then:
+            - ghc-bootstrap/lib/ghc-${{ version }}/lib/private/libiconv_compat.dylib
 
   - script:
       - if: unix
